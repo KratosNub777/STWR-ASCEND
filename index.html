@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#12111c">
+<meta name="description" content="Pomodoro competitivo para estudiar con amigos: ranking de hoy, de la semana y general.">
+<title>STWR-ASCEND</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script type="module" crossorigin src="./assets/index-D-AKUmy4.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-C7AXtfzc.css">
+</head>
+<body>
+<div class="gate" id="gate" hidden>
+  <form class="gate-card" id="gateForm" autocomplete="off">
+    <div class="brand-mark" aria-hidden="true"></div>
+    <h2>¿Cómo te llamás?</h2>
+    <p>Tu nombre aparece en el ranking. Queda guardado en este dispositivo, así que no lo vas a tener que escribir de nuevo.</p>
+    <div class="field">
+      <label for="nameInput">Tu nombre</label>
+      <input id="nameInput" name="nameInput" maxlength="24" placeholder="Ej.: Sofi" required>
+    </div>
+    <div class="gate-err" id="gateErr"></div>
+    <button class="btn btn-primary" type="submit" id="gateBtn">Entrar a competir</button>
+  </form>
+</div>
+
+<main class="app">
+  <a class="update-bar" id="updateBar" href="#" target="_blank" rel="noopener" hidden>
+    <b>Hay una versión nueva de la app.</b> Tocá acá para descargarla e instalarla encima (no perdés tus datos).
+  </a>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div>
+        <h1>STWR-ASCEND</h1>
+        <small>Gana quien más estudia en la semana</small>
+      </div>
+    </div>
+    <div class="me-chip">
+      <span class="who" id="meName">—</span>
+      <span class="streak off" id="meStreak" title="Racha de días seguidos estudiando"></span>
+      <button class="icon-btn" id="editName" type="button" aria-label="Cambiar mi nombre">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <section class="card timer" aria-label="Temporizador">
+    <div class="phase-tabs" aria-hidden="true">
+      <span data-p="study" id="tabStudy">Estudio 25′</span>
+      <span data-p="short" id="tabShort">Descanso 5′</span>
+      <span data-p="long" id="tabLong">Largo 15′</span>
+    </div>
+    <div class="ring-wrap">
+      <svg viewBox="0 0 260 260" aria-hidden="true">
+        <circle class="ring-track" cx="130" cy="130" r="118"></circle>
+        <circle class="ring-bar" id="ringBar" cx="130" cy="130" r="118"></circle>
+      </svg>
+      <div class="ring-center">
+        <div class="clock" id="clock" role="timer" aria-live="off">25:00</div>
+        <div class="clock-sub" id="clockSub">Listo para estudiar</div>
+      </div>
+    </div>
+    <div class="chapters">
+      <div class="fbox chapter" id="chapBox">
+        <div class="fbox-top">
+          <label class="fbox-label" for="chapSelect">¿Qué capítulo estudiás?</label>
+          <span class="fbox-note" id="chapInfo"></span>
+        </div>
+        <div class="sel-wrap"><button class="sel-btn" id="chapSelect" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="chapSelectList"><span class="sel-value" id="chapValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="dd" id="chapSelectList" role="listbox" tabindex="-1" hidden></div></div>
+      </div>
+      <div class="setup-grid">
+        <div class="fbox wide" id="studyBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durStudy">Tiempo de estudio</label>
+            <button class="custom-toggle" id="studyToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="studySelWrap"><button class="sel-btn" id="durStudy" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="durStudyList"><span class="sel-value" id="studyValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="dd" id="durStudyList" role="listbox" tabindex="-1" hidden></div></div>
+          <div class="custom-in" id="customStudyRow" hidden><input id="customStudy" type="number" inputmode="numeric" min="5" max="180" step="1" aria-label="Tiempo de estudio: minutos"><span>min</span></div>
+          <div class="custom-hint" id="studyHint" hidden>De 5 a 180 min</div>
+        </div>
+        <div class="fbox" id="shortBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durShort">Descanso corto</label>
+            <button class="custom-toggle" id="shortToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="shortSelWrap"><button class="sel-btn" id="durShort" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="durShortList"><span class="sel-value" id="shortValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="dd" id="durShortList" role="listbox" tabindex="-1" hidden></div></div>
+          <div class="custom-in" id="customShortRow" hidden><input id="customShort" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso corto: minutos"><span>min</span></div>
+          <div class="custom-hint" id="shortHint" hidden>De 0 a 60 min · 0 = sin descanso</div>
+        </div>
+        <div class="fbox right" id="longBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durLong">Descanso largo · cada 4</label>
+            <button class="custom-toggle" id="longToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="longSelWrap"><button class="sel-btn" id="durLong" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="durLongList"><span class="sel-value" id="longValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="dd" id="durLongList" role="listbox" tabindex="-1" hidden></div></div>
+          <div class="custom-in" id="customLongRow" hidden><input id="customLong" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso largo · cada 4: minutos"><span>min</span></div>
+          <div class="custom-hint" id="longHint" hidden>De 0 a 60 min · 0 = sin descanso</div>
+        </div>
+      </div>
+    </div>
+    <div class="cycle" id="cycle" aria-label="Sesiones del ciclo"></div>
+    <div class="controls">
+      <button class="btn btn-primary" id="startBtn" type="button"></button>
+      <button class="btn btn-ghost" id="resetBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+        <span>Reiniciar</span>
+      </button>
+    </div>
+    <button class="link-btn" id="skipBtn" type="button" hidden>Saltar descanso</button>
+    <p class="timer-note" id="timerNote">Solo suman las sesiones de estudio <b>completas</b>. Si reiniciás a mitad, esos minutos no cuentan.</p>
+  </section>
+
+  <section class="card board" aria-label="Ranking">
+    <div class="board-head">
+      <h2 id="boardTitle">Ranking de la semana</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tabDay" aria-selected="false" type="button">Hoy</button>
+        <button role="tab" id="tabWeek" aria-selected="true" type="button">Esta semana</button>
+        <button role="tab" id="tabAll" aria-selected="false" type="button">General</button>
+      </div>
+    </div>
+    <div class="board-meta" id="boardMeta"></div>
+    <div id="banner" hidden></div>
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead><tr><th>#</th><th>Nombre</th><th class="num" id="thTime">Minutos</th><th class="num">Sesiones</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="empty">
+      <strong>La tabla está esperando su primer pomodoro</strong>
+      Cuando alguien complete una sesión de estudio, aparece acá con sus minutos y sesiones.
+    </div>
+    <div class="champ" id="champ" hidden>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16 3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5Zm0 2h14v2H5v-2Z"/></svg>
+      <div><small>Ganó la semana pasada</small><b id="champName"></b></div>
+    </div>
+    <ul class="rules">
+      <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
+      <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00. El <b>General</b> suma todo el tiempo estudiado y nunca se reinicia.</li>
+      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizar</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
+      <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
+      <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
+    </ul>
+  </section>
+</main>
+
+<div class="toast-zone" id="toasts" aria-live="polite"></div>
+
+</body>
+</html>
