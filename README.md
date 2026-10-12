@@ -10,7 +10,7 @@ y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y 
 | `index.html` | La página (estructura). |
 | `src/styles.css` | El diseño. |
 | `src/app.js` | Reloj, capítulos, tiempos, ranking, racha y avisos. |
-| `src/data.js` | Conexión con Firebase (inicio de sesión anónimo y Firestore). |
+| `src/data.js` | Conexión con Firebase (cuentas con correo y contraseña, y Firestore). |
 | `src/firebase-config.js` | **Las claves de tu proyecto de Firebase: el único archivo que tenés que completar.** |
 | `src/util.js`, `src/sound.js` | Fechas, almacenamiento del dispositivo, sonido y pantalla encendida. |
 | `firestore.rules` | Reglas de seguridad de la base de datos. |
@@ -47,11 +47,12 @@ VITE_USE_EMULATOR=1 npx vite       # terminal 2
 node tests/e2e-two-users.mjs       # terminal 3
 node tests/e2e-offline.mjs
 node tests/e2e-same-name.mjs
+node tests/e2e-accounts.mjs
 ```
 
 ## Datos en Firestore
 
-Colección `players`, un documento por persona (id = identificador anónimo):
+Colección `players`, un documento por persona (id = uid de su cuenta; quienes jugaban sin cuenta conservan el mismo al registrarse):
 
 - `name`: nombre (1 a 24 caracteres).
 - `days`: minutos y sesiones por día (`"2026-10-12": { m, s }`), de los últimos 70 días.
