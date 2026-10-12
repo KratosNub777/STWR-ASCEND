@@ -655,3 +655,18 @@ function toast(html, mine) {
   setTimeout(() => el.remove(), 5200);
   while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
 }
+
+// ---------- Avisos ----------
+let offline = false;
+function showBanner() {
+  const b = $("banner");
+  if (!isConfigured()) {
+    b.className = "banner warn";
+    b.innerHTML = "<b>Falta configurar Firebase.</b> Pegá los datos de tu proyecto en <b>src/firebase-config.js</b> para activar el ranking compartido. El reloj ya funciona.";
+    b.hidden = false;
+  } else if (offline) {
+    b.className = "banner warn";
+    b.innerHTML = "<b>Sin conexión con el ranking.</b> Tus sesiones quedan guardadas en este dispositivo y se suman solas cuando vuelva internet.";
+    b.hidden = false;
+  } else b.hidden = true;
+}
