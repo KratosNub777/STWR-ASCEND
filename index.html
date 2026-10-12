@@ -127,37 +127,64 @@ button { cursor: pointer; }
 .btn-ghost { background: var(--surface-2); color: var(--fg); flex: 0 0 auto; min-width: 118px; }
 .btn-ghost.warn { background: rgba(255, 138, 138, .14); color: var(--danger); }
 .link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: .88rem; padding: 4px; }
-.chapters { width: 100%; max-width: 340px; display: grid; gap: 8px; text-align: left; }
-.chapters-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.chapters-head label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
-.chapters-head span { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.chapters-head span b { color: var(--fg); font-weight: 600; }
-.setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+.chapters { width: 100%; max-width: 360px; display: grid; gap: 10px; text-align: left; }
+.setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .setup-grid .wide { grid-column: 1 / -1; }
-.setup-grid .pick { align-content: end; }
-.pick { display: grid; gap: 5px; min-width: 0; }
-.pick label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
-.pick select {
-  appearance: none; -webkit-appearance: none; width: 100%; min-width: 0;
-  background-color: var(--surface-2); color: var(--fg);
-  border: 1px solid var(--line); border-radius: 12px; padding: 11px 32px 11px 12px;
-  font-family: var(--font-body); font-weight: 600; font-size: 1rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239b99b5' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+
+/* Campo de elección: etiqueta arriba, valor grande, lista nativa encima (abre el selector del teléfono) */
+.fbox {
+  position: relative; display: grid; gap: 6px; min-width: 0;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 10px 12px 12px; transition: border-color .15s, background .15s, box-shadow .15s;
 }
-.pick select:focus { border-color: var(--me); outline: none; }
-.pick select:disabled { opacity: .55; cursor: not-allowed; }
-.pick.main select { border-color: var(--tomato); }
-.pick option { background: var(--surface); color: var(--fg); }
-.custom-in { display: flex; align-items: center; gap: 8px; }
+.fbox:focus-within { border-color: var(--me); box-shadow: 0 0 0 3px var(--me-soft); }
+.fbox.is-custom { border-color: var(--me); background: linear-gradient(160deg, var(--me-soft), var(--surface-2) 70%); }
+.fbox.chapter { border-color: rgba(255, 107, 74, .45); background: linear-gradient(160deg, var(--tomato-soft), var(--surface-2) 70%); }
+.fbox.chapter:focus-within { border-color: var(--tomato); box-shadow: 0 0 0 3px var(--tomato-soft); }
+.fbox.locked { opacity: .6; }
+.fbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; min-height: 24px; }
+.fbox-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.fbox-note { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fbox-note b { color: var(--fg); font-weight: 600; }
+.sel-wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.sel-value {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15; letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-variant-numeric: tabular-nums;
+}
+.sel-value small { font-family: var(--font-body); font-size: .8rem; color: var(--muted); font-weight: 600; margin-left: 3px; }
+.sel-chev {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg); color: var(--muted);
+}
+.sel-chev svg { width: 15px; height: 15px; }
+.sel-wrap select {
+  position: absolute; inset: -6px -4px; width: calc(100% + 8px); height: calc(100% + 12px);
+  opacity: 0; cursor: pointer; font-size: 16px; appearance: none; -webkit-appearance: none;
+}
+.sel-wrap select:disabled { cursor: not-allowed; }
+.sel-wrap select option { background: var(--surface); color: var(--fg); }
+
+.custom-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--me); background: var(--me-soft); color: var(--me);
+  border-radius: 999px; padding: 3px 10px 3px 8px; font-size: .76rem; font-weight: 700;
+  transition: background .15s, color .15s;
+}
+.custom-toggle svg { width: 12px; height: 12px; }
+.custom-toggle[aria-pressed="true"] { background: var(--me); color: #15142a; }
+.custom-toggle:disabled { opacity: .5; cursor: not-allowed; }
+
+.custom-in { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
 .custom-in input {
   width: 100%; min-width: 0; background: var(--bg); color: var(--fg);
-  border: 1px solid var(--me); border-radius: 10px; padding: 9px 10px;
-  font-family: var(--font-display); font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--me); border-radius: 10px; padding: 6px 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums;
 }
-.custom-in input:focus { outline: none; box-shadow: 0 0 0 3px var(--me-soft); }
-.custom-in input:disabled { opacity: .55; }
-.custom-in span { color: var(--muted); font-size: .82rem; white-space: nowrap; }
+.custom-in input:focus { outline: none; }
+.custom-in input:disabled { opacity: .6; }
+.custom-in span { color: var(--muted); font-size: .85rem; font-weight: 600; white-space: nowrap; }
+.custom-hint { font-size: .74rem; color: var(--me); }
+@media (prefers-reduced-motion: reduce) { .fbox, .custom-toggle { transition: none; } }
 .tag-chap { background: var(--surface); color: var(--muted); border: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
 .timer-note { color: var(--muted); font-size: .85rem; max-width: 34ch; margin: 0; }
 .timer-note b { color: var(--fg); font-weight: 600; }
@@ -311,20 +338,41 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       </div>
     </div>
     <div class="chapters">
-      <div class="pick main">
-        <div class="chapters-head">
-          <label for="chapSelect">¿Qué capítulo estudiás?</label>
-          <span id="chapInfo"></span>
+      <div class="fbox chapter" id="chapBox">
+        <div class="fbox-top">
+          <label class="fbox-label" for="chapSelect">¿Qué capítulo estudiás?</label>
+          <span class="fbox-note" id="chapInfo"></span>
         </div>
-        <select id="chapSelect"></select>
+        <div class="sel-wrap"><span class="sel-value" id="chapValue">Capítulo 1</span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span><select id="chapSelect"></select></div>
       </div>
       <div class="setup-grid">
-        <div class="pick wide"><label for="durStudy">Tiempo de estudio</label><select id="durStudy"></select>
-          <div class="custom-in" id="customStudyRow" hidden><input id="customStudy" type="number" inputmode="numeric" min="5" max="180" step="1" aria-label="Tiempo de estudio: minutos personalizados"><span>min</span></div></div>
-        <div class="pick"><label for="durShort">Descanso corto</label><select id="durShort"></select>
-          <div class="custom-in" id="customShortRow" hidden><input id="customShort" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso corto: minutos personalizados"><span>min</span></div></div>
-        <div class="pick"><label for="durLong">Descanso largo (cada 4)</label><select id="durLong"></select>
-          <div class="custom-in" id="customLongRow" hidden><input id="customLong" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso largo (cada 4): minutos personalizados"><span>min</span></div></div>
+        <div class="fbox wide" id="studyBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durStudy">Tiempo de estudio</label>
+            <button class="custom-toggle" id="studyToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="studySelWrap"><span class="sel-value" id="studyValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span><select id="durStudy"></select></div>
+          <div class="custom-in" id="customStudyRow" hidden><input id="customStudy" type="number" inputmode="numeric" min="5" max="180" step="1" aria-label="Tiempo de estudio: minutos"><span>min</span></div>
+          <div class="custom-hint" id="studyHint" hidden>De 5 a 180 min</div>
+        </div>
+        <div class="fbox" id="shortBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durShort">Descanso corto</label>
+            <button class="custom-toggle" id="shortToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="shortSelWrap"><span class="sel-value" id="shortValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span><select id="durShort"></select></div>
+          <div class="custom-in" id="customShortRow" hidden><input id="customShort" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso corto: minutos"><span>min</span></div>
+          <div class="custom-hint" id="shortHint" hidden>De 0 a 60 min · 0 = sin descanso</div>
+        </div>
+        <div class="fbox" id="longBox">
+          <div class="fbox-top">
+            <label class="fbox-label" for="durLong">Descanso largo · cada 4</label>
+            <button class="custom-toggle" id="longToggle" type="button" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>Personalizar</button>
+          </div>
+          <div class="sel-wrap" id="longSelWrap"><span class="sel-value" id="longValue"></span><span class="sel-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span><select id="durLong"></select></div>
+          <div class="custom-in" id="customLongRow" hidden><input id="customLong" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso largo · cada 4: minutos"><span>min</span></div>
+          <div class="custom-hint" id="longHint" hidden>De 0 a 60 min · 0 = sin descanso</div>
+        </div>
       </div>
     </div>
     <div class="cycle" id="cycle" aria-label="Sesiones del ciclo"></div>
@@ -366,7 +414,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     <ul class="rules">
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
       <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00.</li>
-      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizado</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
+      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizar</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
       <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
     </ul>
@@ -597,6 +645,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   // ---------- Capítulo y tiempos ----------
   const SELECTS = { study: "durStudy", short: "durShort", long: "durLong" };
   const CUSTOM = { study: "customStudy", short: "customShort", long: "customLong" };
+  function setupLocked() { return timer.status !== "idle"; }
+  const valueHtml = (m) => (m === 0 ? "Sin descanso" : `${m}<small>min</small>`);
+  function nearestOption(k, m) {
+    return OPTIONS[k].reduce((best, o) => (Math.abs(o - m) < Math.abs(best - m) ? o : best), OPTIONS[k][0]);
+  }
   function applyMins(k, n) {
     timer.mins[k] = n;
     if (timer.phase === k && timer.status === "idle") {
@@ -605,13 +658,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     }
     saveTimer(); renderTimer();
   }
-  function setupLocked() { return timer.status !== "idle"; }
   function fillSelects() {
     const cs = $("chapSelect");
     for (let i = 1; i <= CHAPTERS; i++) cs.add(new Option(`Capítulo ${i}`, String(i)));
     Object.entries(SELECTS).forEach(([k, id]) => {
       OPTIONS[k].forEach((m) => $(id).add(new Option(minsLabel(m), String(m))));
-      $(id).add(new Option("Personalizado…", "custom"));
     });
   }
   function renderChapters() {
@@ -619,14 +670,24 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     const cs = $("chapSelect");
     cs.value = String(timer.chapter);
     cs.disabled = locked;
+    $("chapValue").textContent = `Capítulo ${timer.chapter}`;
+    $("chapBox").classList.toggle("locked", locked && timer.phase !== "study");
     Object.entries(SELECTS).forEach(([k, id]) => {
-      const sel = $(id), m = timer.mins[k];
+      const m = timer.mins[k];
       const custom = timer.custom[k] || !OPTIONS[k].includes(m);
-      sel.querySelector('option[value="custom"]').textContent = custom ? `Personalizado: ${minsLabel(m)}` : "Personalizado…";
-      sel.value = custom ? "custom" : String(m);
+      const sel = $(id), input = $(CUSTOM[k]);
+      if (OPTIONS[k].includes(m)) sel.value = String(m);
       sel.disabled = locked;
-      const input = $(CUSTOM[k]);
+      $(k + "Value").innerHTML = valueHtml(m);
+      $(k + "SelWrap").hidden = custom;
       $(CUSTOM[k] + "Row").hidden = !custom;
+      $(k + "Hint").hidden = !custom;
+      $(k + "Box").classList.toggle("is-custom", custom);
+      $(k + "Box").classList.toggle("locked", locked);
+      const t = $(k + "Toggle");
+      t.setAttribute("aria-pressed", String(custom));
+      t.lastChild.textContent = custom ? "Personalizado" : "Personalizar";
+      t.disabled = locked;
       if (document.activeElement !== input) input.value = String(m);
       input.disabled = locked;
     });
@@ -634,8 +695,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     $("tabShort").textContent = timer.mins.short ? `Descanso ${timer.mins.short}′` : "Sin descanso";
     $("tabLong").textContent = timer.mins.long ? `Largo ${timer.mins.long}′` : "Sin largo";
     const mine = myChapters()[timer.chapter];
-    const m = mine ? Number(mine.m) || 0 : 0;
-    $("chapInfo").innerHTML = locked && timer.phase === "study" ? "Estudiando ahora" : `Llevás <b>${m} min</b>`;
+    const mm = mine ? Number(mine.m) || 0 : 0;
+    $("chapInfo").innerHTML = locked && timer.phase === "study" ? "Estudiando ahora" : `Llevás <b>${mm} min</b>`;
   }
   $("chapSelect").addEventListener("change", (e) => {
     if (setupLocked()) return renderChapters();
@@ -646,17 +707,18 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   Object.entries(SELECTS).forEach(([k, id]) => {
     $(id).addEventListener("change", (e) => {
       if (setupLocked()) return renderChapters();
-      if (e.target.value === "custom") {
-        timer.custom[k] = true;
-        saveTimer(); renderChapters();
-        const input = $(CUSTOM[k]);
-        try { input.focus(); input.select(); } catch {}
-        return;
-      }
       const n = Number(e.target.value);
       if (!OPTIONS[k].includes(n)) return renderChapters();
-      timer.custom[k] = false;
       applyMins(k, n);
+    });
+    $(k + "Toggle").addEventListener("click", () => {
+      if (setupLocked()) return;
+      const on = !(timer.custom[k] || !OPTIONS[k].includes(timer.mins[k]));
+      timer.custom[k] = on;
+      if (!on) { applyMins(k, nearestOption(k, timer.mins[k])); return; }
+      saveTimer(); renderChapters();
+      const input = $(CUSTOM[k]);
+      try { input.focus(); input.select(); } catch {}
     });
     const input = $(CUSTOM[k]);
     const commit = () => {
