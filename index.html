@@ -127,6 +127,21 @@ button { cursor: pointer; }
 .btn-ghost { background: var(--surface-2); color: var(--fg); flex: 0 0 auto; min-width: 118px; }
 .btn-ghost.warn { background: rgba(255, 138, 138, .14); color: var(--danger); }
 .link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: .88rem; padding: 4px; }
+.chapters { width: 100%; max-width: 340px; display: grid; gap: 8px; text-align: left; }
+.chapters-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.chapters-head label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.chapters-head span { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chapters-head span b { color: var(--fg); font-weight: 600; }
+.chap-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.chap-grid button {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--fg);
+  border-radius: 10px; padding: 8px 0; font-family: var(--font-display); font-weight: 700; font-size: .95rem;
+  font-variant-numeric: tabular-nums; transition: background .15s, border-color .15s;
+}
+.chap-grid button[aria-pressed="true"] { background: var(--tomato-soft); border-color: var(--tomato); color: var(--tomato); }
+.chap-grid button:disabled { cursor: not-allowed; opacity: .45; }
+.chap-grid button[aria-pressed="true"]:disabled { opacity: 1; }
+.tag-chap { background: var(--surface); color: var(--muted); border: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
 .timer-note { color: var(--muted); font-size: .85rem; max-width: 34ch; margin: 0; }
 .timer-note b { color: var(--fg); font-weight: 600; }
 
@@ -278,6 +293,13 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
         <div class="clock-sub" id="clockSub">Listo para estudiar</div>
       </div>
     </div>
+    <div class="chapters">
+      <div class="chapters-head">
+        <label id="chapLabel">¿Qué capítulo estudiás?</label>
+        <span id="chapInfo"></span>
+      </div>
+      <div class="chap-grid" id="chapGrid" role="group" aria-labelledby="chapLabel"></div>
+    </div>
     <div class="cycle" id="cycle" aria-label="Sesiones del ciclo"></div>
     <div class="controls">
       <button class="btn btn-primary" id="startBtn" type="button"></button>
@@ -318,6 +340,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
       <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00.</li>
       <li>Cada 4 sesiones toca un descanso largo de 15 minutos.</li>
+      <li>Elegí el <b>capítulo (1 al 13)</b> antes de iniciar: queda fijo hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
     </ul>
   </section>
@@ -365,10 +388,13 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   let pending = store.get("pomo.pending", []); // sesiones aún sin guardar en la base
 
   let timer = Object.assign(
-    { phase: "study", status: "idle", endAt: 0, remaining: DUR.study, cycle: 0 },
+    { phase: "study", status: "idle", endAt: 0, remaining: DUR.study, cycle: 0, chapter: 1 },
     store.get("pomo.timer", {})
   );
   if (!DUR[timer.phase]) timer.phase = "study";
+  const CHAPTERS = 13;
+  const validChap = (n) => Number.isInteger(n) && n >= 1 && n <= CHAPTERS;
+  if (!validChap(timer.chapter)) timer.chapter = 1;
 
   // ---------- Sonido suave ----------
   let audioCtx = null;
@@ -424,9 +450,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   function start() {
     unlockAudio();
     if (timer.status === "running") return;
+    const fresh = timer.phase === "study" && timer.status === "idle";
     timer.endAt = Date.now() + timer.remaining;
     timer.status = "running";
     saveTimer(); keepAwake(true); renderTimer();
+    if (fresh) { const c = timer.chapter; writeMine((body) => { if (body.current === c) return false; body.current = c; }); }
   }
   function pause() {
     if (timer.status !== "running") return;
@@ -455,7 +483,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       recordSession(new Date(timer.endAt || Date.now()));
       const long = timer.cycle >= 4;
       toast(long ? "<b>¡Cuarta sesión completa!</b> Te ganaste 15 minutos de descanso."
-                 : `<b>+${STUDY_MIN} minutos</b> sumados al ranking. Ahora, 5 minutos de descanso.`);
+                 : `<b>+${STUDY_MIN} minutos</b> de Capítulo ${timer.chapter} sumados al ranking. Ahora, 5 minutos de descanso.`);
       setPhase(long ? "long" : "short", true);
     } else {
       if (finished === "long") timer.cycle = 0;
@@ -511,11 +539,43 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     if (resetArmed) note.innerHTML = "Tocá <b>¿Seguro?</b> otra vez para reiniciar. Esta sesión <b>no va a sumar</b> minutos.";
     else if (timer.phase === "study") note.innerHTML = "Solo suman las sesiones de <b>25 minutos completas</b>. Si reiniciás a mitad, esos minutos no cuentan.";
     else note.innerHTML = "Los descansos no suman minutos, pero ayudan a rendir en la próxima sesión.";
+    renderChapters();
     const done = timer.cycle || 0;
     $("cycle").innerHTML = Array.from({ length: 4 }, (_, i) => `<i class="${i < done ? "done" : ""}"></i>`).join("")
       + `<span>${done}/4 hasta el descanso largo</span>`;
     renderClock();
   }
+
+  // ---------- Capítulos ----------
+  function chapterLocked() { return timer.phase === "study" && timer.status !== "idle"; }
+  function renderChapters() {
+    const grid = $("chapGrid");
+    if (!grid.children.length) {
+      for (let i = 1; i <= CHAPTERS; i++) {
+        const b = document.createElement("button");
+        b.type = "button"; b.textContent = i; b.dataset.c = i;
+        b.setAttribute("aria-label", `Capítulo ${i}`);
+        grid.append(b);
+      }
+    }
+    const locked = chapterLocked();
+    [...grid.children].forEach((b) => {
+      const on = Number(b.dataset.c) === timer.chapter;
+      b.setAttribute("aria-pressed", String(on));
+      b.disabled = locked;
+    });
+    const mine = myChapters()[timer.chapter];
+    const m = mine ? Number(mine.m) || 0 : 0;
+    $("chapInfo").innerHTML = locked
+      ? `Estudiando <b>Capítulo ${timer.chapter}</b>`
+      : `Capítulo ${timer.chapter}: llevás <b>${m} min</b>`;
+  }
+  $("chapGrid").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-c]");
+    if (!b || chapterLocked()) return;
+    timer.chapter = Number(b.dataset.c);
+    saveTimer(); renderChapters();
+  });
 
   $("startBtn").addEventListener("click", () => (timer.status === "running" ? pause() : start()));
   $("resetBtn").addEventListener("click", onReset);
@@ -530,16 +590,23 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 
   // ---------- Registro de sesiones ----------
   function recordSession(when) {
-    pending.push({ day: dayKey(when), at: when.getTime() });
+    pending.push({ day: dayKey(when), at: when.getTime(), chapter: timer.chapter });
     store.set("pomo.pending", pending);
     // se ve al instante en la tabla, aunque la base tarde
-    rebuild(); renderBoard();
+    rebuild(); renderBoard(); renderChapters();
     flush();
   }
   function applySessions(days, list) {
     list.forEach(({ day }) => {
       const d = days[day] || { m: 0, s: 0 };
       days[day] = { m: (Number(d.m) || 0) + STUDY_MIN, s: (Number(d.s) || 0) + 1 };
+    });
+  }
+  function applyChapters(chapters, list) {
+    list.forEach(({ chapter }) => {
+      if (!validChap(chapter)) return;
+      const c = chapters[chapter] || { m: 0, s: 0 };
+      chapters[chapter] = { m: (Number(c.m) || 0) + STUDY_MIN, s: (Number(c.s) || 0) + 1 };
     });
   }
   function pruneDays(days) {
@@ -556,7 +623,12 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       try {
         const snap = await ref.get();
         const cur = snap.exists ? snap.data() : {};
-        const body = { name: cur.name || myName, days: JSON.parse(JSON.stringify(cur.days || {})) };
+        const body = {
+          name: cur.name || myName,
+          days: JSON.parse(JSON.stringify(cur.days || {})),
+          chapters: JSON.parse(JSON.stringify(cur.chapters || {}))
+        };
+        if (validChap(cur.current)) body.current = cur.current;
         const after = mutate(body);
         if (after === false) return;
         body.days = pruneDays(body.days);
@@ -579,11 +651,14 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       batch = pending.slice();
       if (!batch.length) return false;
       applySessions(body.days, batch);
+      applyChapters(body.chapters, batch);
+      const last = batch[batch.length - 1];
+      if (validChap(last.chapter)) body.current = last.chapter;
     }, () => {
       // se borran de la cola solo cuando la base confirmó el guardado
       pending = pending.filter((x) => !batch.includes(x));
       store.set("pomo.pending", pending);
-      rebuild(); renderBoard();
+      rebuild(); renderBoard(); renderChapters();
     }).finally(() => { flushing = false; if (pending.length && db && canWrite && batch.length && !pending.every((x) => batch.includes(x))) flush(); });
   }
   window.addEventListener("online", flush);
@@ -594,12 +669,16 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     players = rawDocs.map(({ id, data }) => ({
       id,
       name: typeof data.name === "string" ? data.name.slice(0, 24) : "",
-      days: JSON.parse(JSON.stringify(data.days && typeof data.days === "object" ? data.days : {}))
+      days: JSON.parse(JSON.stringify(data.days && typeof data.days === "object" ? data.days : {})),
+      chapters: JSON.parse(JSON.stringify(data.chapters && typeof data.chapters === "object" ? data.chapters : {})),
+      current: validChap(data.current) ? data.current : null
     }));
     const me = players.find((p) => p.id === myId);
     if (me) {
       store.set("pomo.localDays", me.days);
+      store.set("pomo.localChapters", me.chapters);
       applySessions(me.days, pending);
+      applyChapters(me.chapters, pending);
     }
   }
 
@@ -622,6 +701,13 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     let pos = 0, last = -1;
     list.forEach((p, i) => { if (p.m !== last) { pos = i + 1; last = p.m; } p.pos = pos; });
     return list;
+  }
+  function myChapters() {
+    const me = players.find((p) => p.id === myId);
+    if (me) return me.chapters;
+    const ch = JSON.parse(JSON.stringify(store.get("pomo.localChapters", {})));
+    applyChapters(ch, pending);
+    return ch;
   }
   function localDays() {
     // mis días según la base más lo pendiente; sirve también sin conexión
@@ -672,6 +758,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       line.append(nm);
       if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${view === "week" ? "Líder" : "Líder de hoy"}</span>`);
       if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
+      if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
       if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
       tdName.append(line);
 
@@ -834,6 +921,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       }
       checkClimbs();
       renderBoard();
+      renderChapters();
     }, () => { offline = true; showBanner(); });
   }
 
