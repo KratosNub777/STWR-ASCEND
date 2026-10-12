@@ -46,6 +46,7 @@ npm run emulators                  # terminal 1
 VITE_USE_EMULATOR=1 npx vite       # terminal 2
 node tests/e2e-two-users.mjs       # terminal 3
 node tests/e2e-offline.mjs
+node tests/e2e-same-name.mjs
 ```
 
 ## Datos en Firestore

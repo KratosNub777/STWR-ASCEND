@@ -678,12 +678,41 @@ function openGate(prefill) {
   $("gate").hidden = false;
   setTimeout(() => { try { $("nameInput").focus(); } catch {} }, 50);
 }
-$("gateForm").addEventListener("submit", (e) => {
+// Nombres comparados sin mayúsculas, tildes ni espacios de más: "Facundo", "facundo" y "Fácundo " son el mismo.
+const normName = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+const nameTaken = (name) => players.some((p) => p.id !== myId && p.name && normName(p.name) === normName(name));
+const TAKEN_MSG = "Ese nombre ya lo usa otra persona. Probá con otro o agregale una inicial.";
+
+// El ranking confirmado por el servidor: hace falta para saber qué nombres ya existen.
+let rankingReady = false;
+let readyWaiters = [];
+function markRankingReady() {
+  rankingReady = true;
+  readyWaiters.forEach((fn) => fn());
+  readyWaiters = [];
+}
+function waitRanking(ms) {
+  if (rankingReady || !isConfigured()) return Promise.resolve();
+  return new Promise((res) => { readyWaiters.push(res); setTimeout(res, ms); });
+}
+
+let gateBusy = false;
+$("gateForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (gateBusy) return;
   const v = $("nameInput").value.replace(/\s+/g, " ").trim().slice(0, 24);
   if (!v) { $("gateErr").textContent = "Escribí un nombre para aparecer en el ranking."; return; }
-  const taken = players.some((p) => p.id !== myId && p.name && p.name.toLowerCase() === v.toLowerCase());
-  if (taken) { $("gateErr").textContent = "Ese nombre ya lo usa otra persona. Probá con otro o agregale una inicial."; return; }
+  unlockAudio();
+  if (!rankingReady) {
+    // antes de aceptar el nombre, espera a que llegue el ranking (o sigue sin él si no hay internet)
+    gateBusy = true;
+    const btn = $("gateBtn"), label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Revisando nombres…";
+    await waitRanking(8000);
+    btn.disabled = false; btn.textContent = label;
+    gateBusy = false;
+  }
+  if (nameTaken(v)) { $("gateErr").textContent = TAKEN_MSG; return; }
   myName = v;
   store.set("pomo.name", v);
   $("gate").hidden = true;
@@ -730,14 +759,22 @@ async function connect() {
   showBanner();
 
   let first = true;
-  unwatch = watchPlayers((docs) => {
+  unwatch = watchPlayers((docs, fromCache) => {
     rawDocs = docs;
     rebuild();
     const me = players.find((p) => p.id === myId);
-    if (first) {
+    // la primera vez que el servidor confirma el ranking: recién ahí se sabe qué nombres están tomados
+    if (first && !fromCache) {
       first = false;
+      markRankingReady();
       if (me && me.name && !myName) { myName = me.name; store.set("pomo.name", myName); $("gate").hidden = true; }
-      if (myName && (!me || me.name !== myName)) writeProfile({ name: myName });
+      if (myName && (!me || me.name !== myName)) {
+        if (nameTaken(myName)) {
+          // el nombre guardado en este dispositivo ya lo usa otra persona: pedir otro antes de guardarlo
+          openGate(myName);
+          $("gateErr").textContent = TAKEN_MSG;
+        } else writeProfile({ name: myName });
+      }
       flush();
     }
     if (offline) { offline = false; showBanner(); }
