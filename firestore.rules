@@ -1,0 +1,96 @@
+rules_version = '2';
+
+// Reglas de STWR-ASCEND
+// - Cualquiera puede LEER el ranking.
+// - Cada persona solo puede ESCRIBIR su propio documento: players/{su uid anónimo}.
+// - Se valida la forma de los datos y que los minutos sumados sean creíbles:
+//   nunca más minutos que el tiempo real que pasó desde el último guardado con minutos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{uid} {
+      allow read: if true;
+      allow create: if isOwner(uid) && validShape(request.resource.data) && isEmptyStart(request.resource.data);
+      allow update: if isOwner(uid) && validShape(request.resource.data)
+                    && (noProgress(request.resource.data, resource.data)
+                        || validProgress(request.resource.data, resource.data));
+      allow delete: if false;
+    }
+
+    // todo lo demás queda cerrado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  function isOwner(uid) {
+    return request.auth != null && request.auth.uid == uid;
+  }
+
+  function validCounter(c) {
+    return c is map && c.keys().hasAll(['m', 's']) && c.keys().hasOnly(['m', 's'])
+      && c.m is int && c.s is int && c.m >= 0 && c.s >= 0 && c.m <= c.s * 180;
+  }
+
+  function validShape(d) {
+    return d.keys().hasAll(['name', 'days', 'chapters', 'total', 'updatedAt', 'lastAt'])
+      && d.keys().hasOnly(['name', 'days', 'chapters', 'total', 'current', 'updatedAt', 'lastAt', 'lastDay', 'lastSession'])
+      && d.name is string && d.name.size() >= 1 && d.name.size() <= 24
+      && d.days is map && d.days.size() <= 80
+      && d.chapters is map && d.chapters.size() <= 13
+      && d.chapters.keys().hasOnly(['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13'])
+      && validCounter(d.total)
+      && d.updatedAt == request.time
+      && d.lastAt is timestamp
+      && (!('current' in d) || (d.current is int && d.current >= 1 && d.current <= 13))
+      && (!('lastDay' in d) || (d.lastDay is string && d.lastDay.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+      && (!('lastSession' in d) || d.lastSession is int);
+  }
+
+  // al crearse, el documento arranca en cero
+  function isEmptyStart(d) {
+    return d.total.m == 0 && d.total.s == 0 && d.days.size() == 0 && d.chapters.size() == 0
+      && d.lastAt == request.time;
+  }
+
+  // cambios sin minutos (nombre, capítulo actual, limpieza de días viejos)
+  function noProgress(d, o) {
+    return d.total == o.total && d.lastAt == o.lastAt
+      && d.days.diff(o.days).addedKeys().size() == 0
+      && d.days.diff(o.days).changedKeys().size() == 0
+      && d.chapters.diff(o.chapters).addedKeys().size() == 0
+      && d.chapters.diff(o.chapters).changedKeys().size() == 0
+      && (!('lastSession' in d) || d.lastSession == o.get('lastSession', 0));
+  }
+
+  // una tanda de 1 a 20 sesiones completas, todas del mismo día (lastDay) y del mismo capítulo (current)
+  function validProgress(d, o) {
+    let dm = d.total.m - o.total.m;
+    let ds = d.total.s - o.total.s;
+    let oldDay = o.days.get(d.lastDay, {'m': 0, 's': 0});
+    let dayDiff = d.days.diff(o.days);
+    return ds >= 1 && ds <= 20
+      && dm >= ds * 5 && dm <= ds * 180
+      && d.lastAt == request.time
+      // no se pueden sumar más minutos que los que pasaron de verdad (2 minutos de margen)
+      && request.time >= o.lastAt + duration.value(dm - 2, 'm')
+      && 'lastDay' in d && 'lastSession' in d
+      && d.lastSession > o.get('lastSession', 0)
+      && dayDiff.addedKeys().union(dayDiff.changedKeys()).hasOnly([d.lastDay])
+      && validCounter(d.days[d.lastDay])
+      && d.days[d.lastDay].m == oldDay.m + dm
+      && d.days[d.lastDay].s == oldDay.s + ds
+      && validChapters(d, o, dm, ds);
+  }
+
+  function validChapters(d, o, dm, ds) {
+    let chDiff = d.chapters.diff(o.chapters);
+    let key = ('current' in d) ? string(d.current) : '';
+    return (chDiff.addedKeys().size() == 0 && chDiff.changedKeys().size() == 0)
+      || ('current' in d
+          && chDiff.addedKeys().union(chDiff.changedKeys()).hasOnly([key])
+          && validCounter(d.chapters[key])
+          && d.chapters[key].m == o.chapters.get(key, {'m': 0, 's': 0}).m + dm
+          && d.chapters[key].s == o.chapters.get(key, {'m': 0, 's': 0}).s + ds);
+  }
+}

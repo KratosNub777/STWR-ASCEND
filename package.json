@@ -1,0 +1,22 @@
+{
+  "name": "stwr-ascend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-stwr",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-stwr \"node --test tests/rules.test.mjs\""
+  },
+  "dependencies": {
+    "firebase": "12.19.0"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase-tools": "15.31.0",
+    "playwright": "^1.56.1",
+    "vite": "8.3.1"
+  }
+}

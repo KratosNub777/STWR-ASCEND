@@ -1,1 +1,50 @@
 # STWR-ASCEND
+
+Pomodoro competitivo para estudiar con amigos: reloj circular, capítulos del 1 al 13, tiempos personalizables
+y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y avisos al subir de puesto.
+
+## Estructura
+
+| Archivo | Para qué sirve |
+| --- | --- |
+| `index.html` | La página (estructura). |
+| `src/styles.css` | El diseño. |
+| `src/app.js` | Reloj, capítulos, tiempos, ranking, racha y avisos. |
+| `src/data.js` | Conexión con Firebase (inicio de sesión anónimo y Firestore). |
+| `src/firebase-config.js` | **Las claves de tu proyecto de Firebase: el único archivo que tenés que completar.** |
+| `src/util.js`, `src/sound.js` | Fechas, almacenamiento del dispositivo, sonido y pantalla encendida. |
+| `firestore.rules` | Reglas de seguridad de la base de datos. |
+| `tests/` | Pruebas de las reglas y de la app con dos usuarios, usando el emulador de Firebase. |
+| `artifact/index.html` | La versión original que corre dentro de Claude (referencia). |
+| `docs/FIREBASE.md` | Guía paso a paso para crear el proyecto gratis en Firebase. |
+
+## Comandos
+
+```bash
+npm install          # instala todo (una sola vez)
+npm run dev          # abre la app en http://localhost:5173
+npm run build        # genera la versión final en dist/
+npm run test:rules   # prueba las reglas de seguridad con el emulador
+```
+
+Pruebas de punta a punta con el emulador (dos usuarios y sin conexión):
+
+```bash
+npm run emulators                  # terminal 1
+VITE_USE_EMULATOR=1 npx vite       # terminal 2
+node tests/e2e-two-users.mjs       # terminal 3
+node tests/e2e-offline.mjs
+```
+
+## Datos en Firestore
+
+Colección `players`, un documento por persona (id = identificador anónimo):
+
+- `name`: nombre (1 a 24 caracteres).
+- `days`: minutos y sesiones por día (`"2026-10-12": { m, s }`), de los últimos 70 días.
+- `chapters`: minutos y sesiones por capítulo (`"3": { m, s }`).
+- `total`: total histórico `{ m, s }`, para el ranking General.
+- `current`: capítulo que está estudiando.
+- `updatedAt`: hora del servidor del último guardado.
+- `lastAt`: hora del servidor del último guardado que sumó minutos. Las reglas lo usan para que nadie sume más minutos que el tiempo real que pasó.
+- `lastDay`, `lastSession`: día y marca de la última tanda guardada. Evitan contar dos veces una sesión guardada sin conexión.
