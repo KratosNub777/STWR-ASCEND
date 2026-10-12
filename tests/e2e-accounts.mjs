@@ -72,7 +72,7 @@ check("sus 50 minutos siguen en la base", d1.total.m === 50 && d1.name === "Luca
 // 2) Otro dispositivo: contraseña mal, después bien
 const b = await open();
 await sleep(2500);
-await b.click("#authSwitch");
+await b.click("#authTabLogin");
 await b.fill("#authEmail", "lucas@prueba.com");
 await b.fill("#authPass", "otra-cosa");
 await b.click("#authBtn");
