@@ -867,11 +867,12 @@ function renderAuth() {
   $("authPass").autocomplete = reg ? "new-password" : "current-password";
   $("authPass").placeholder = reg ? "Al menos 6 caracteres" : "";
   $("authBtn").textContent = reg ? "Crear cuenta" : "Entrar";
-  $("authSwitchLead").textContent = reg ? "¿Ya tenés cuenta?" : "¿Todavía no tenés cuenta?";
-  $("authSwitch").textContent = reg ? "Iniciar sesión" : "Crear una cuenta nueva";
+  $("authTabRegister").setAttribute("aria-selected", String(reg));
+  $("authTabLogin").setAttribute("aria-selected", String(!reg));
   $("authForgot").hidden = reg;
 }
-$("authSwitch").addEventListener("click", () => openAuth(authMode === "register" ? "login" : "register"));
+$("authTabRegister").addEventListener("click", () => { if (authMode !== "register") openAuth("register"); });
+$("authTabLogin").addEventListener("click", () => { if (authMode !== "login") openAuth("login"); });
 
 $("authForgot").addEventListener("click", async () => {
   const email = $("authEmail").value.trim();
