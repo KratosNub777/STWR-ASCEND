@@ -761,3 +761,18 @@ export function startApp() {
   connect();
   checkForUpdate();
 }
+
+// App Android: avisa si hay un APK más nuevo publicado
+async function checkForUpdate() {
+  const mine = Number(import.meta.env.VITE_APP_VERSION) || 0;
+  if (!isNative() || !mine) return;
+  try {
+    const res = await fetch(`${SITE_URL}version.json`, { cache: "no-store" });
+    const info = await res.json();
+    if (Number(info.version) > mine && typeof info.apk === "string" && info.apk.startsWith("https://")) {
+      const bar = $("updateBar");
+      bar.href = info.apk;
+      bar.hidden = false;
+    }
+  } catch {}
+}
