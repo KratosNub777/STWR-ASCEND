@@ -1,0 +1,28 @@
+rules_version = '2';
+
+// Reglas de STWR-ASCEND
+// - Cualquiera puede LEER el ranking.
+// - Cada persona solo puede ESCRIBIR su propio documento: players/{su uid anónimo}.
+// - Se valida la forma de los datos y que los minutos sumados sean creíbles:
+//   nunca más minutos que el tiempo real que pasó desde el último guardado con minutos.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{uid} {
+      allow read: if true;
+      allow create: if isOwner(uid) && validShape(request.resource.data) && isEmptyStart(request.resource.data);
+      allow update: if isOwner(uid) && validShape(request.resource.data)
+                    && (noProgress(request.resource.data, resource.data)
+                        || validProgress(request.resource.data, resource.data));
+      allow delete: if false;
+    }
+
+    // todo lo demás queda cerrado
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  function isOwner(uid) {
+    return request.auth != null && request.auth.uid == uid;
+  }
