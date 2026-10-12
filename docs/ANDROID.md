@@ -1,6 +1,6 @@
 # App Android: APK, instalación y cómo compartirla
 
-El APK se compila solo en GitHub cada vez que se sube un cambio al repo. No hace falta Android Studio.
+El APK se compila solo en GitHub cada vez que entra un cambio a la rama `main`. No hace falta Android Studio.
 
 ## 1. Cargar la contraseña de la firma (una sola vez)
 
@@ -43,7 +43,7 @@ Mensaje listo para copiar:
 
 ## 5. Actualizaciones
 
-Cuando se sube un cambio, GitHub publica un APK nuevo en unos 5 a 10 minutos.
+Cuando entra un cambio a `main`, GitHub publica un APK nuevo en unos 5 a 10 minutos.
 La app instalada se da cuenta sola y muestra arriba **"Hay una versión nueva de la app"**: se toca, se descarga y se instala encima. No se pierden los datos ni el lugar en el ranking.
 
 ## Si algo falla
