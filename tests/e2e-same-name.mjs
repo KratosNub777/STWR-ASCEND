@@ -1,4 +1,4 @@
-// Nombres repetidos: aunque alguien escriba el nombre apenas abre la app (antes de que cargue el ranking),
+// Nombres repetidos: aunque alguien cree su cuenta apenas abre la app (antes de que cargue el ranking),
 // no puede usar un nombre que ya tiene otra persona, ni con otras mayúsculas o tildes.
 import { chromium } from "playwright";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
@@ -29,24 +29,28 @@ async function open() {
   return page;
 }
 
+const register = async (page, name, email) => {
+  await page.fill("#authName", name);
+  await page.fill("#authEmail", email);
+  await page.fill("#authPass", "secreta123");
+  await page.click("#authBtn");
+};
 const a = await open();
-await a.fill("#nameInput", "Facundo");
-await a.click("#gateBtn");
+await register(a, "Facundo", "facundo@prueba.com");
 await sleep(3000);
 
 // la segunda persona escribe enseguida, sin esperar a que cargue el ranking
 const b = await open();
-await b.fill("#nameInput", "fácundo ");
-await b.click("#gateBtn");
+await register(b, "fácundo ", "otro@prueba.com");
 await sleep(4000);
-const err = await b.$eval("#gateErr", (x) => x.textContent);
-const gateOpen = await b.$eval("#gate", (x) => !x.hidden);
+const err = await b.$eval("#authErr", (x) => x.textContent);
+const gateOpen = await b.$eval("#auth", (x) => !x.hidden);
 console.log("Segundo 'fácundo': error =", JSON.stringify(err), "| sigue en la pantalla de nombre:", gateOpen);
 
-await b.fill("#nameInput", "Facundo V");
-await b.click("#gateBtn");
+await b.fill("#authName", "Facundo V");
+await b.click("#authBtn");
 await sleep(3000);
-console.log("Con 'Facundo V': pantalla cerrada =", await b.$eval("#gate", (x) => x.hidden));
+console.log("Con 'Facundo V': pantalla cerrada =", await b.$eval("#auth", (x) => x.hidden));
 console.log("Nombres en la base:", await names());
 console.log("errores:", errors);
 const ok = err.includes("ya lo usa") && gateOpen && JSON.stringify(await names()) === JSON.stringify(["Facundo", "Facundo V"]);
