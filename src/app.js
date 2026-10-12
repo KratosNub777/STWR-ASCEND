@@ -746,3 +746,18 @@ async function connect() {
     renderChapters();
   }, () => { offline = true; showBanner(); });
 }
+
+// ---------- Arranque ----------
+export function startApp() {
+  if (timer.phase !== "study" && !timer.mins[timer.phase]) { timer.phase = "study"; timer.status = "idle"; timer.remaining = dur("study"); }
+  if (timer.status === "running" && Date.now() >= timer.endAt) {
+    // terminó mientras la página estaba cerrada: se completa igual
+    completePhase();
+  }
+  if (timer.status === "running") { keepAwake(true); planAlerts(); }
+  renderTimer();
+  renderBoard();
+  if (!myName) openGate("");
+  connect();
+  checkForUpdate();
+}
