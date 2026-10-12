@@ -43,11 +43,15 @@ export async function signIn() {
   return uid;
 }
 
-/** Escucha la colección completa en vivo. cb recibe [{id, data}]. */
+/**
+ * Escucha la colección completa en vivo. cb recibe ([{id, data}], fromCache):
+ * fromCache = true mientras los datos salen solo de la caché del dispositivo, sin confirmar con el servidor.
+ */
 export function watchPlayers(cb, onError) {
   return onSnapshot(
     collection(db, "players"),
-    (snap) => cb(snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }))),
+    { includeMetadataChanges: true },
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, data: d.data() || {} })), snap.metadata.fromCache),
     onError
   );
 }
