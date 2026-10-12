@@ -1,9 +1,10 @@
-# Publica la web (GitHub Pages) y compila el APK de Android cada vez que se sube un cambio.
+# Publica la web (GitHub Pages) y compila el APK de Android cada vez que entra un cambio a main.
+# Solo main publica: así un cambio todavía no fusionado nunca llega a los celulares.
 name: Publicar web y APK
 
 on:
   push:
-    branches: [main, claude/awesome-darwin-f5arwg]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
