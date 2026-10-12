@@ -51,3 +51,11 @@ test("cada uno crea solo su propio documento, y en cero", async () => {
   await assertFails(setDoc(doc(anon(), "players/nadie"), fresh("Nadie")));
   await assertFails(setDoc(doc(as("dani"), "players/dani"), { ...fresh("Dani"), total: { m: 500, s: 20 } }));
 });
+
+test("nadie puede modificar ni borrar el documento de otro", async () => {
+  await seedAna(30);
+  await assertFails(updateDoc(doc(as("beto"), "players/ana"), { name: "Hackeado", updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as("beto"), "players/ana"), plus25()));
+  await assertFails(deleteDoc(doc(as("beto"), "players/ana")));
+  await assertFails(deleteDoc(doc(as("ana"), "players/ana")));
+});
