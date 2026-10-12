@@ -1,0 +1,14 @@
+{
+  "appId": "com.kratosnub777.stwrascend",
+  "appName": "STWR-ASCEND",
+  "webDir": "dist",
+  "android": {
+    "backgroundColor": "#12111c"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_timer",
+      "iconColor": "#ff6b4a"
+    }
+  }
+}
