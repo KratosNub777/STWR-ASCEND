@@ -44,3 +44,10 @@ test("cualquiera puede leer el ranking, aun sin sesión", async () => {
   await assertSucceeds(getDocs(collection(anon(), "players")));
   await assertSucceeds(getDoc(doc(as("beto"), "players/ana")));
 });
+
+test("cada uno crea solo su propio documento, y en cero", async () => {
+  await assertSucceeds(setDoc(doc(as("ana"), "players/ana"), fresh()));
+  await assertFails(setDoc(doc(as("beto"), "players/carla"), fresh("Carla")));
+  await assertFails(setDoc(doc(anon(), "players/nadie"), fresh("Nadie")));
+  await assertFails(setDoc(doc(as("dani"), "players/dani"), { ...fresh("Dani"), total: { m: 500, s: 20 } }));
+});
