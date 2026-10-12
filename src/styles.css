@@ -315,3 +315,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   .ring-bar { transition: none; }
   .btn { transition: none; }
 }
+
+/* Aviso de versión nueva (app Android) */
+.update-bar {
+  grid-column: 1 / -1; display: block; text-decoration: none; color: var(--fg);
+  background: var(--me-soft); border: 1px solid var(--me); border-radius: var(--r-md);
+  padding: 12px 14px; font-size: .9rem;
+}
+.update-bar b { color: var(--me); }
