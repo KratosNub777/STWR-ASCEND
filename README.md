@@ -29,3 +29,34 @@ y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y 
 
 - Web: https://kratosnub777.github.io/STWR-ASCEND/
 - APK: https://github.com/KratosNub777/STWR-ASCEND/releases/latest/download/STWR-ASCEND.apk
+
+## Comandos
+
+```bash
+npm install          # instala todo (una sola vez)
+npm run dev          # abre la app en http://localhost:5173
+npm run build        # genera la versión final en dist/
+npm run test:rules   # prueba las reglas de seguridad con el emulador
+```
+
+Pruebas de punta a punta con el emulador (dos usuarios y sin conexión):
+
+```bash
+npm run emulators                  # terminal 1
+VITE_USE_EMULATOR=1 npx vite       # terminal 2
+node tests/e2e-two-users.mjs       # terminal 3
+node tests/e2e-offline.mjs
+```
+
+## Datos en Firestore
+
+Colección `players`, un documento por persona (id = identificador anónimo):
+
+- `name`: nombre (1 a 24 caracteres).
+- `days`: minutos y sesiones por día (`"2026-10-12": { m, s }`), de los últimos 70 días.
+- `chapters`: minutos y sesiones por capítulo (`"3": { m, s }`).
+- `total`: total histórico `{ m, s }`, para el ranking General.
+- `current`: capítulo que está estudiando.
+- `updatedAt`: hora del servidor del último guardado.
+- `lastAt`: hora del servidor del último guardado que sumó minutos. Las reglas lo usan para que nadie sume más minutos que el tiempo real que pasó.
+- `lastDay`, `lastSession`: día y marca de la última tanda guardada. Evitan contar dos veces una sesión guardada sin conexión.
