@@ -17,3 +17,29 @@ const FLAME = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><
 const ICON_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.4-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z"/></svg>';
 const ICON_PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4.5" height="16" rx="1.2"/><rect x="13.5" y="4" width="4.5" height="16" rx="1.2"/></svg>';
 const TROPHY = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V18h3v2H8v-2h3v-3.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3Zm0 4H6v1a2 2 0 0 0 1 1.7V7Zm10 0v2.7A2 2 0 0 0 18 8V7h-1Z"/></svg>';
+
+// ---------- Estado ----------
+let myName = store.get("pomo.name", "");
+let myId = null;
+let connected = false;     // sesión iniciada en Firebase
+let players = [];          // [{id, name, days}]
+let view = store.get("pomo.view", "week");
+if (!["day", "week", "all"].includes(view)) view = "week";
+let prevRanks = null;      // {weekKey, ranks: {id: pos}, mins: {id: min}}
+let pending = store.get("pomo.pending", []); // sesiones aún sin guardar en la base
+
+let timer = Object.assign(
+  { phase: "study", status: "idle", endAt: 0, remaining: 25 * 60e3, cycle: 0, chapter: 1, mins: { ...DEFAULT_MINS } },
+  store.get("pomo.timer", {})
+);
+if (!OPTIONS[timer.phase]) timer.phase = "study";
+const minsLabel = (m) => (m === 0 ? "Sin descanso" : `${m} min`);
+timer.mins = Object.assign({ ...DEFAULT_MINS }, timer.mins);
+// minutos permitidos al personalizar (0 en descansos = sin descanso)
+const RANGE = { study: [5, 180], short: [0, 60], long: [0, 60] };
+const validMins = (k, m) => Number.isInteger(m) && m >= RANGE[k][0] && m <= RANGE[k][1];
+timer.custom = Object.assign({ study: false, short: false, long: false }, timer.custom);
+Object.keys(OPTIONS).forEach((k) => { if (!validMins(k, timer.mins[k])) timer.mins[k] = DEFAULT_MINS[k]; });
+const CHAPTERS = 13;
+const validChap = (n) => Number.isInteger(n) && n >= 1 && n <= CHAPTERS;
+if (!validChap(timer.chapter)) timer.chapter = 1;
