@@ -526,3 +526,88 @@ function localDays() {
   applySessions(days, pending);
   return days;
 }
+
+// ---------- Render del ranking ----------
+function renderMe() {
+  $("meName").textContent = myName || "—";
+  const n = streakOf(localDays());
+  const el = $("meStreak");
+  el.classList.toggle("off", n === 0);
+  el.innerHTML = `${FLAME}${n} ${n === 1 ? "día" : "días"}`;
+}
+
+function renderBoard() {
+  renderMe();
+  const now = new Date();
+  const keys = view === "day" ? [dayKey(now)] : view === "all" ? "all" : weekKeys(mondayOf(now));
+  const list = rankList(keys);
+  $("tabDay").setAttribute("aria-selected", String(view === "day"));
+  $("tabWeek").setAttribute("aria-selected", String(view === "week"));
+  $("tabAll").setAttribute("aria-selected", String(view === "all"));
+  $("boardTitle").textContent = { day: "Ranking de hoy", week: "Ranking de la semana", all: "Ranking general" }[view];
+  $("thTime").textContent = view === "all" ? "Tiempo" : "Minutos";
+
+  const leaderMins = list.length ? list[0].m : 0;
+  const tbody = $("rows");
+  tbody.textContent = "";
+  list.forEach((p) => {
+    const tr = document.createElement("tr");
+    const isLead = p.m > 0 && p.m === leaderMins;
+    if (isLead) tr.classList.add("lead");
+    if (p.id === myId) tr.classList.add("me");
+    if (p.m === 0) tr.classList.add("zero");
+
+    const tdPos = document.createElement("td");
+    tdPos.innerHTML = `<span class="pos">${p.pos}</span>`;
+
+    const tdName = document.createElement("td");
+    tdName.className = "name-cell";
+    const line = document.createElement("div");
+    line.className = "name-line";
+    const nm = document.createElement("span");
+    nm.className = "pname"; nm.textContent = p.name;
+    line.append(nm);
+    if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
+    if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
+    if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
+    if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
+    tdName.append(line);
+
+    const tdMin = document.createElement("td");
+    tdMin.className = "num";
+    tdMin.innerHTML = view === "all" && p.m >= 60
+      ? `<span class="mins">${Math.floor(p.m / 60)}<small>h</small> ${p.m % 60}<small>min</small></span>`
+      : `<span class="mins">${p.m}<small>min</small></span>`;
+    const tdSes = document.createElement("td");
+    tdSes.className = "num sess";
+    tdSes.textContent = p.s;
+    tr.append(tdPos, tdName, tdMin, tdSes);
+    tbody.append(tr);
+  });
+  $("tableWrap").hidden = list.length === 0;
+  const anyMinutes = list.some((p) => p.m > 0);
+  $("empty").hidden = anyMinutes;
+  $("empty").innerHTML = view === "day"
+    ? "<strong>Hoy todavía nadie sumó minutos</strong>Completá una sesión de estudio y quedás arriba de la tabla."
+    : view === "all"
+    ? "<strong>Todavía no hay tiempo acumulado</strong>Acá se suma todo lo que estudió cada uno desde que empezó, sin reinicios."
+    : "<strong>La semana arranca en cero</strong>Cuando alguien complete una sesión de estudio, aparece acá con sus minutos y sesiones.";
+
+  // meta: participantes y reinicio del lunes
+  const nextMon = addDays(mondayOf(now), 7);
+  const left = nextMon - now;
+  const dd = Math.floor(left / 864e5), hh = Math.floor((left % 864e5) / 36e5);
+  const people = list.length;
+  $("boardMeta").innerHTML = `<span><b>${people}</b> ${people === 1 ? "participante" : "participantes"}</span>`
+    + (view === "all" ? "<span>Suma todo lo estudiado, <b>nunca se reinicia</b></span>"
+      : `<span>Reinicio semanal en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
+
+  // ganador de la semana pasada
+  const lastWeek = rankList(weekKeys(addDays(mondayOf(now), -7)));
+  const champ = lastWeek[0];
+  if (champ && champ.m > 0) {
+    const winners = lastWeek.filter((p) => p.m === champ.m).map((p) => p.name).join(" y ");
+    $("champName").textContent = `${winners} · ${champ.m} min`;
+    $("champ").hidden = false;
+  } else $("champ").hidden = true;
+}
