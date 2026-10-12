@@ -73,3 +73,12 @@ Firebase solo deja iniciar sesión desde direcciones autorizadas.
 `localhost` ya viene autorizado: es el que usa la app Android, así que no hay que agregar nada para el APK.
 
 ---
+
+## ¿Cómo sé que funcionó?
+
+Abrí la web publicada, escribí tu nombre y volvé a **Firestore Database → Datos**. Tiene que aparecer la colección `players` con un documento a tu nombre.
+
+## Límites del plan gratis
+
+Para un grupo de amigos sobra: 50.000 lecturas y 20.000 escrituras por día, y 1 GB de datos.
+Si algún día se pasara, la app no se rompe: el ranking deja de actualizarse hasta el día siguiente y las sesiones quedan guardadas en cada teléfono.
