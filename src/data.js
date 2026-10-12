@@ -33,3 +33,23 @@ function init() {
     connectFirestoreEmulator(db, host, 8080);
   }
 }
+
+/** Inicia sesión anónima (o recupera la guardada en este dispositivo) y devuelve el uid. */
+export async function signIn() {
+  init();
+  await auth.authStateReady();
+  if (!auth.currentUser) await signInAnonymously(auth);
+  uid = auth.currentUser.uid;
+  return uid;
+}
+
+/** Escucha la colección completa en vivo. cb recibe [{id, data}]. */
+export function watchPlayers(cb, onError) {
+  return onSnapshot(
+    collection(db, "players"),
+    (snap) => cb(snap.docs.map((d) => ({ id: d.id, data: d.data() || {} }))),
+    onError
+  );
+}
+
+const myRef = () => doc(db, "players", uid);
