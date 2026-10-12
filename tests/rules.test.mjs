@@ -64,3 +64,8 @@ test("cambiar el nombre o el capítulo actual está permitido", async () => {
   await seedAna(30);
   await assertSucceeds(updateDoc(doc(as("ana"), "players/ana"), { name: "Anita", current: 7, updatedAt: serverTimestamp() }));
 });
+
+test("sumar una sesión completa después del tiempo real está permitido", async () => {
+  await seedAna(30);
+  await assertSucceeds(updateDoc(doc(as("ana"), "players/ana"), plus25()));
+});
