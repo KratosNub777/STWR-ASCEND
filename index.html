@@ -6,9 +6,12 @@
 <meta name="theme-color" content="#12111c">
 <meta name="description" content="Pomodoro competitivo para estudiar con amigos: ranking de hoy, de la semana y general.">
 <title>STWR-ASCEND</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
 <div class="gate" id="gate" hidden>
@@ -26,6 +29,9 @@
 </div>
 
 <main class="app">
+  <a class="update-bar" id="updateBar" href="#" target="_blank" rel="noopener" hidden>
+    <b>Hay una versión nueva de la app.</b> Tocá acá para descargarla e instalarla encima (no perdés tus datos).
+  </a>
   <header class="topbar">
     <div class="brand">
       <div class="brand-mark" aria-hidden="true"></div>

@@ -1,4 +1,5 @@
 // Sonido suave al terminar una fase y pantalla encendida mientras corre el reloj.
+import { isNative, nativeKeepAwake } from "./native.js";
 
 let audioCtx = null;
 
@@ -31,6 +32,7 @@ export function chime(kind) {
 
 let wakeLock = null;
 export async function keepAwake(on) {
+  if (isNative()) return nativeKeepAwake(on);
   try {
     if (on && !wakeLock && navigator.wakeLock) {
       wakeLock = await navigator.wakeLock.request("screen");

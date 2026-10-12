@@ -2,11 +2,12 @@
 
 Tiempo estimado: 10 minutos. No hace falta tarjeta de crédito: se usa el plan gratuito **Spark**.
 
-Son cuatro partes:
+Son cinco partes:
 1. Crear el proyecto.
 2. Registrar la app web y copiar la configuración.
 3. Activar el inicio de sesión anónimo.
 4. Crear la base de datos y pegar las reglas.
+5. Autorizar la dirección de la web publicada.
 
 ---
 
@@ -61,11 +62,21 @@ Así cada persona tiene un identificador propio sin crear cuenta ni contraseña.
 
 Listo. La colección `players` no hace falta crearla: aparece sola cuando entra la primera persona.
 
+## 5. Permitir la web publicada (un paso más, 1 minuto)
+
+Firebase solo deja iniciar sesión desde direcciones autorizadas.
+
+1. Menú de la izquierda: **Authentication** → pestaña **Configuración** (*Settings*) → **Dominios autorizados**.
+2. Tocá **Agregar dominio** y escribí: `kratosnub777.github.io`
+3. Tocá **Agregar**.
+
+`localhost` ya viene autorizado: es el que usa la app Android, así que no hay que agregar nada para el APK.
+
 ---
 
 ## ¿Cómo sé que funcionó?
 
-Cuando la web esté publicada (paso 4 del plan), abrila, escribí tu nombre y volvé a **Firestore Database → Datos**. Tiene que aparecer la colección `players` con un documento a tu nombre.
+Abrí la web publicada, escribí tu nombre y volvé a **Firestore Database → Datos**. Tiene que aparecer la colección `players` con un documento a tu nombre.
 
 ## Límites del plan gratis
 

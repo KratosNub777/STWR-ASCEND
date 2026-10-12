@@ -2,6 +2,7 @@
 import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import { isConfigured, signIn, watchPlayers, loadMine, createMine, updateMine } from "./data.js";
+import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
 const OPTIONS = {
   study: [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90],
@@ -56,36 +57,62 @@ function fmt(ms) {
   return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 }
 
-function start() {
+// El reloj se calcula siempre por hora de fin (endAt), nunca contando segundos:
+// así no se atrasa con la app en segundo plano o la pantalla apagada.
+// `from` permite encadenar una fase justo donde terminó la anterior.
+function start(from) {
   unlockAudio();
   if (timer.status === "running") return;
   const fresh = timer.phase === "study" && timer.status === "idle";
-  timer.endAt = Date.now() + timer.remaining;
+  timer.endAt = (from || Date.now()) + timer.remaining;
   timer.status = "running";
-  saveTimer(); keepAwake(true); renderTimer();
+  saveTimer(); keepAwake(true); renderTimer(); planAlerts();
   if (fresh) writeProfile({ current: timer.chapter });
 }
 function pause() {
   if (timer.status !== "running") return;
   timer.remaining = Math.max(0, timer.endAt - Date.now());
   timer.status = "paused";
-  saveTimer(); keepAwake(false); renderTimer();
+  saveTimer(); keepAwake(false); renderTimer(); planAlerts();
 }
-function setPhase(phase, autoStart) {
+function setPhase(phase, autoStart, from) {
   timer.phase = phase;
   timer.remaining = dur(phase);
   timer.status = "idle";
   timer.endAt = 0;
-  if (autoStart) { start(); return; }
-  saveTimer(); renderTimer();
+  if (autoStart) { start(from); return; }
+  saveTimer(); renderTimer(); planAlerts();
 }
 function resetPhase() {
   timer.remaining = dur(timer.phase);
   timer.status = "idle"; timer.endAt = 0;
-  saveTimer(); keepAwake(false); renderTimer();
+  saveTimer(); keepAwake(false); renderTimer(); planAlerts();
 }
+
+// Avisos del sistema (app Android): fin de la fase actual y, si después viene un descanso, fin de ese descanso.
+function planAlerts() {
+  if (!isNative()) return;
+  if (timer.status !== "running") { cancelAlerts(); return; }
+  const alerts = [];
+  if (timer.phase === "study") {
+    const next = (timer.cycle || 0) + 1 >= 4 ? "long" : "short";
+    const brk = timer.mins[next];
+    alerts.push({
+      at: timer.endAt,
+      title: `¡Sesión completa! +${timer.mins.study} min`,
+      body: brk ? `Capítulo ${timer.chapter}. Ahora toca ${next === "long" ? "el descanso largo" : "descansar"} ${brk} minutos.`
+                : `Capítulo ${timer.chapter}. Seguís de corrido con la próxima sesión.`
+    });
+    if (brk) alerts.push({ at: timer.endAt + brk * 60e3, title: "Fin del descanso", body: "Cuando quieras, arrancá la próxima sesión." });
+  } else {
+    alerts.push({ at: timer.endAt, title: "Fin del descanso", body: "Cuando quieras, arrancá la próxima sesión." });
+  }
+  scheduleAlerts(alerts);
+}
+
 function completePhase() {
   const finished = timer.phase;
+  const endedAt = timer.endAt || Date.now();
   chime(finished);
   if (finished === "study") {
     timer.cycle = (timer.cycle || 0) + 1;
@@ -97,11 +124,12 @@ function completePhase() {
     if (timer.mins[next] === 0) {
       // sin descanso: la próxima sesión de estudio arranca sola
       toast(`${gained} Seguís de corrido con la próxima sesión.`);
-      setPhase("study", true);
+      // encadena solo si volviste a tiempo: no se suman sesiones que nadie estudió mientras la app estaba cerrada
+      setPhase("study", true, Date.now() - endedAt < 60e3 ? endedAt : undefined);
     } else {
       toast(long ? `<b>¡Cuarta sesión completa!</b> Te ganaste ${timer.mins.long} minutos de descanso.`
                  : `${gained} Ahora, ${timer.mins.short} minutos de descanso.`);
-      setPhase(next, true);
+      setPhase(next, true, endedAt);
     }
   } else {
     if (finished === "long") timer.cycle = 0;
@@ -726,8 +754,25 @@ export function startApp() {
     // terminó mientras la página estaba cerrada: se completa igual
     completePhase();
   }
+  if (timer.status === "running") { keepAwake(true); planAlerts(); }
   renderTimer();
   renderBoard();
   if (!myName) openGate("");
   connect();
+  checkForUpdate();
+}
+
+// App Android: avisa si hay un APK más nuevo publicado
+async function checkForUpdate() {
+  const mine = Number(import.meta.env.VITE_APP_VERSION) || 0;
+  if (!isNative() || !mine) return;
+  try {
+    const res = await fetch(`${SITE_URL}version.json`, { cache: "no-store" });
+    const info = await res.json();
+    if (Number(info.version) > mine && typeof info.apk === "string" && info.apk.startsWith("https://")) {
+      const bar = $("updateBar");
+      bar.href = info.apk;
+      bar.hidden = false;
+    }
+  } catch {}
 }
