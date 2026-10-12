@@ -38,3 +38,9 @@ const plus25 = () => ({
 const fresh = (name = "Ana") => ({
   name, days: {}, chapters: {}, total: { m: 0, s: 0 }, updatedAt: serverTimestamp(), lastAt: serverTimestamp()
 });
+
+test("cualquiera puede leer el ranking, aun sin sesión", async () => {
+  await seedAna(30);
+  await assertSucceeds(getDocs(collection(anon(), "players")));
+  await assertSucceeds(getDoc(doc(as("beto"), "players/ana")));
+});
