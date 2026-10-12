@@ -59,3 +59,8 @@ test("nadie puede modificar ni borrar el documento de otro", async () => {
   await assertFails(deleteDoc(doc(as("beto"), "players/ana")));
   await assertFails(deleteDoc(doc(as("ana"), "players/ana")));
 });
+
+test("cambiar el nombre o el capítulo actual está permitido", async () => {
+  await seedAna(30);
+  await assertSucceeds(updateDoc(doc(as("ana"), "players/ana"), { name: "Anita", current: 7, updatedAt: serverTimestamp() }));
+});
