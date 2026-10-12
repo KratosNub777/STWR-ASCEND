@@ -62,3 +62,23 @@ service cloud.firestore {
       && d.chapters.diff(o.chapters).changedKeys().size() == 0
       && (!('lastSession' in d) || d.lastSession == o.get('lastSession', 0));
   }
+
+  // una tanda de 1 a 20 sesiones completas, todas del mismo día (lastDay) y del mismo capítulo (current)
+  function validProgress(d, o) {
+    let dm = d.total.m - o.total.m;
+    let ds = d.total.s - o.total.s;
+    let oldDay = o.days.get(d.lastDay, {'m': 0, 's': 0});
+    let dayDiff = d.days.diff(o.days);
+    return ds >= 1 && ds <= 20
+      && dm >= ds * 5 && dm <= ds * 180
+      && d.lastAt == request.time
+      // no se pueden sumar más minutos que los que pasaron de verdad (2 minutos de margen)
+      && request.time >= o.lastAt + duration.value(dm - 2, 'm')
+      && 'lastDay' in d && 'lastSession' in d
+      && d.lastSession > o.get('lastSession', 0)
+      && dayDiff.addedKeys().union(dayDiff.changedKeys()).hasOnly([d.lastDay])
+      && validCounter(d.days[d.lastDay])
+      && d.days[d.lastDay].m == oldDay.m + dm
+      && d.days[d.lastDay].s == oldDay.s + ds
+      && validChapters(d, o, dm, ds);
+  }
