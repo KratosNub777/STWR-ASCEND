@@ -85,3 +85,16 @@ test("los minutos del día y del capítulo tienen que coincidir con el total", a
   // dos días distintos en un mismo guardado
   await assertFails(updateDoc(ref, { ...plus25(), days: { "2026-10-12": { m: 50, s: 2 }, "2026-10-11": { m: 25, s: 1 } } }));
 });
+
+test("datos con mala forma o tramposos se rechazan", async () => {
+  await seedAna(120);
+  const ref = doc(as("ana"), "players/ana");
+  await assertFails(updateDoc(ref, { name: "x".repeat(25), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { name: "", updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { admin: true, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { current: 14, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { total: { m: 0, s: 0 }, updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { ...plus25(), total: { m: 5000, s: 2 } }));
+  await assertFails(updateDoc(ref, { ...plus25(), updatedAt: Timestamp.fromMillis(Date.now() + 864e5) }));
+  await assertFails(updateDoc(ref, { ...plus25(), lastSession: 500 }));
+});
