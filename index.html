@@ -149,6 +149,15 @@ button { cursor: pointer; }
 .pick select:disabled { opacity: .55; cursor: not-allowed; }
 .pick.main select { border-color: var(--tomato); }
 .pick option { background: var(--surface); color: var(--fg); }
+.custom-in { display: flex; align-items: center; gap: 8px; }
+.custom-in input {
+  width: 100%; min-width: 0; background: var(--bg); color: var(--fg);
+  border: 1px solid var(--me); border-radius: 10px; padding: 9px 10px;
+  font-family: var(--font-display); font-weight: 700; font-size: 1rem; font-variant-numeric: tabular-nums;
+}
+.custom-in input:focus { outline: none; box-shadow: 0 0 0 3px var(--me-soft); }
+.custom-in input:disabled { opacity: .55; }
+.custom-in span { color: var(--muted); font-size: .82rem; white-space: nowrap; }
 .tag-chap { background: var(--surface); color: var(--muted); border: 1px solid var(--line); text-transform: none; letter-spacing: 0; }
 .timer-note { color: var(--muted); font-size: .85rem; max-width: 34ch; margin: 0; }
 .timer-note b { color: var(--fg); font-weight: 600; }
@@ -310,9 +319,12 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
         <select id="chapSelect"></select>
       </div>
       <div class="setup-grid">
-        <div class="pick wide"><label for="durStudy">Tiempo de estudio</label><select id="durStudy"></select></div>
-        <div class="pick"><label for="durShort">Descanso corto</label><select id="durShort"></select></div>
-        <div class="pick"><label for="durLong">Descanso largo (cada 4)</label><select id="durLong"></select></div>
+        <div class="pick wide"><label for="durStudy">Tiempo de estudio</label><select id="durStudy"></select>
+          <div class="custom-in" id="customStudyRow" hidden><input id="customStudy" type="number" inputmode="numeric" min="5" max="180" step="1" aria-label="Tiempo de estudio: minutos personalizados"><span>min</span></div></div>
+        <div class="pick"><label for="durShort">Descanso corto</label><select id="durShort"></select>
+          <div class="custom-in" id="customShortRow" hidden><input id="customShort" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso corto: minutos personalizados"><span>min</span></div></div>
+        <div class="pick"><label for="durLong">Descanso largo (cada 4)</label><select id="durLong"></select>
+          <div class="custom-in" id="customLongRow" hidden><input id="customLong" type="number" inputmode="numeric" min="0" max="60" step="1" aria-label="Descanso largo (cada 4): minutos personalizados"><span>min</span></div></div>
       </div>
     </div>
     <div class="cycle" id="cycle" aria-label="Sesiones del ciclo"></div>
@@ -354,7 +366,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     <ul class="rules">
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
       <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00.</li>
-      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido.</li>
+      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizado</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
       <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
     </ul>
@@ -414,7 +426,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   if (!OPTIONS[timer.phase]) timer.phase = "study";
   const minsLabel = (m) => (m === 0 ? "Sin descanso" : `${m} min`);
   timer.mins = Object.assign({ ...DEFAULT_MINS }, timer.mins);
-  Object.keys(OPTIONS).forEach((k) => { if (!OPTIONS[k].includes(timer.mins[k])) timer.mins[k] = DEFAULT_MINS[k]; });
+  // minutos permitidos al personalizar (0 en descansos = sin descanso)
+  const RANGE = { study: [5, 180], short: [0, 60], long: [0, 60] };
+  const validMins = (k, m) => Number.isInteger(m) && m >= RANGE[k][0] && m <= RANGE[k][1];
+  timer.custom = Object.assign({ study: false, short: false, long: false }, timer.custom);
+  Object.keys(OPTIONS).forEach((k) => { if (!validMins(k, timer.mins[k])) timer.mins[k] = DEFAULT_MINS[k]; });
   const CHAPTERS = 13;
   const validChap = (n) => Number.isInteger(n) && n >= 1 && n <= CHAPTERS;
   if (!validChap(timer.chapter)) timer.chapter = 1;
@@ -580,12 +596,22 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 
   // ---------- Capítulo y tiempos ----------
   const SELECTS = { study: "durStudy", short: "durShort", long: "durLong" };
+  const CUSTOM = { study: "customStudy", short: "customShort", long: "customLong" };
+  function applyMins(k, n) {
+    timer.mins[k] = n;
+    if (timer.phase === k && timer.status === "idle") {
+      if (n === 0) { setPhase("study", false); return; }
+      timer.remaining = dur(k);
+    }
+    saveTimer(); renderTimer();
+  }
   function setupLocked() { return timer.status !== "idle"; }
   function fillSelects() {
     const cs = $("chapSelect");
     for (let i = 1; i <= CHAPTERS; i++) cs.add(new Option(`Capítulo ${i}`, String(i)));
     Object.entries(SELECTS).forEach(([k, id]) => {
       OPTIONS[k].forEach((m) => $(id).add(new Option(minsLabel(m), String(m))));
+      $(id).add(new Option("Personalizado…", "custom"));
     });
   }
   function renderChapters() {
@@ -593,7 +619,17 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     const cs = $("chapSelect");
     cs.value = String(timer.chapter);
     cs.disabled = locked;
-    Object.entries(SELECTS).forEach(([k, id]) => { $(id).value = String(timer.mins[k]); $(id).disabled = locked; });
+    Object.entries(SELECTS).forEach(([k, id]) => {
+      const sel = $(id), m = timer.mins[k];
+      const custom = timer.custom[k] || !OPTIONS[k].includes(m);
+      sel.querySelector('option[value="custom"]').textContent = custom ? `Personalizado: ${minsLabel(m)}` : "Personalizado…";
+      sel.value = custom ? "custom" : String(m);
+      sel.disabled = locked;
+      const input = $(CUSTOM[k]);
+      $(CUSTOM[k] + "Row").hidden = !custom;
+      if (document.activeElement !== input) input.value = String(m);
+      input.disabled = locked;
+    });
     $("tabStudy").textContent = `Estudio ${timer.mins.study}′`;
     $("tabShort").textContent = timer.mins.short ? `Descanso ${timer.mins.short}′` : "Sin descanso";
     $("tabLong").textContent = timer.mins.long ? `Largo ${timer.mins.long}′` : "Sin largo";
@@ -610,15 +646,30 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   Object.entries(SELECTS).forEach(([k, id]) => {
     $(id).addEventListener("change", (e) => {
       if (setupLocked()) return renderChapters();
+      if (e.target.value === "custom") {
+        timer.custom[k] = true;
+        saveTimer(); renderChapters();
+        const input = $(CUSTOM[k]);
+        try { input.focus(); input.select(); } catch {}
+        return;
+      }
       const n = Number(e.target.value);
       if (!OPTIONS[k].includes(n)) return renderChapters();
-      timer.mins[k] = n;
-      if (timer.phase === k) {
-        if (n === 0) { setPhase("study", false); return; }
-        timer.remaining = dur(k);
-      }
-      saveTimer(); renderTimer();
+      timer.custom[k] = false;
+      applyMins(k, n);
     });
+    const input = $(CUSTOM[k]);
+    const commit = () => {
+      if (setupLocked()) return renderChapters();
+      const raw = Math.round(Number(input.value));
+      if (input.value.trim() === "" || !Number.isFinite(raw)) { input.value = String(timer.mins[k]); return; }
+      const n = Math.min(RANGE[k][1], Math.max(RANGE[k][0], raw));
+      input.value = String(n);
+      if (n !== raw) toast(`<b>${k === "study" ? "El estudio" : "El descanso"} va de ${RANGE[k][0]} a ${RANGE[k][1]} minutos.</b> Lo dejé en ${n}.`);
+      applyMins(k, n);
+    };
+    input.addEventListener("change", commit);
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
   });
   fillSelects();
 
@@ -648,7 +699,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     });
   }
   // las sesiones viejas en cola no traían minutos: eran de 25
-  const sessionMins = (m) => (OPTIONS.study.includes(m) ? m : 25);
+  const sessionMins = (m) => (validMins("study", m) ? m : 25);
   function applyChapters(chapters, list) {
     list.forEach(({ chapter, m }) => {
       if (!validChap(chapter)) return;
