@@ -69,3 +69,8 @@ test("sumar una sesión completa después del tiempo real está permitido", asyn
   await seedAna(30);
   await assertSucceeds(updateDoc(doc(as("ana"), "players/ana"), plus25()));
 });
+
+test("no se pueden sumar más minutos que el tiempo que pasó", async () => {
+  await seedAna(5);
+  await assertFails(updateDoc(doc(as("ana"), "players/ana"), plus25()));
+});
