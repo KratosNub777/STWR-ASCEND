@@ -1,0 +1,42 @@
+# Publica la web (GitHub Pages) y compila el APK de Android cada vez que se sube un cambio.
+name: Publicar web y APK
+
+on:
+  push:
+    branches: [main, claude/awesome-darwin-f5arwg]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publicar
+  cancel-in-progress: false
+
+jobs:
+  web:
+    name: Web (GitHub Pages)
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: ver
+        run: echo "version=$(git rev-list --count HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+        env:
+          VITE_APP_VERSION: ${{ steps.ver.outputs.version }}
+      - name: Publicar en GitHub Pages (rama gh-pages)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          keep_files: true
+          commit_message: "Publicar web ${{ steps.ver.outputs.version }}"
