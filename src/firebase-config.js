@@ -10,10 +10,10 @@
 //  Lo que protege la base son las reglas de firestore.rules.
 // ─────────────────────────────────────────────────────────────
 export const firebaseConfig = {
-  apiKey: "PEGAR_AQUI",
-  authDomain: "PEGAR_AQUI",
-  projectId: "PEGAR_AQUI",
-  storageBucket: "PEGAR_AQUI",
-  messagingSenderId: "PEGAR_AQUI",
-  appId: "PEGAR_AQUI"
+  apiKey: "AIzaSyDPs9S-MWTp65P9Kv0mPbNpi4sp3nE5IRM",
+  authDomain: "stwr-ascend.firebaseapp.com",
+  projectId: "stwr-ascend",
+  storageBucket: "stwr-ascend.firebasestorage.app",
+  messagingSenderId: "699592526388",
+  appId: "1:699592526388:web:559c392811ca9f10c29861"
 };
