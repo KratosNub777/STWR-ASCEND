@@ -1,7 +1,9 @@
 // STWR-ASCEND: reloj, capítulos, tiempos, ranking y racha.
 import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
-import { isConfigured, signIn, watchPlayers, loadMine, createMine, updateMine } from "./data.js";
+import {
+  isConfigured, currentAccount, register, logIn, resetPassword, logOut, watchPlayers, loadMine, createMine, updateMine
+} from "./data.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
 const OPTIONS = {
@@ -739,14 +741,17 @@ setInterval(() => {
 }, 60e3);
 
 // ---------- Conexión con la base compartida ----------
+// El ranking se lee sin cuenta; para sumar minutos hace falta haber entrado con correo y contraseña.
 let connecting = false;
 let unwatch = null;
+let synced = false;        // ya se acomodó el nombre con el de la base en esta sesión
 async function connect() {
   if (!isConfigured()) { showBanner(); return; }
   if (connecting || connected) return;
   connecting = true;
+  let account;
   try {
-    myId = await signIn();
+    account = await currentAccount();
   } catch {
     // sin internet en el primer uso: se reintenta cuando vuelva la conexión
     offline = true; showBanner();
@@ -754,35 +759,171 @@ async function connect() {
     return;
   }
   connecting = false;
+  watch();
+  if (account && !account.anonymous) enter(account.uid);
+  else {
+    // sin cuenta, o con la anónima de antes: hay que registrarse (la anónima se convierte y conserva sus minutos)
+    if (account) myId = account.uid;
+    if ($("auth").hidden) openAuth("register");
+  }
+}
+
+// ya con cuenta: desde acá se guardan sesiones y nombre
+function enter(uid) {
+  myId = uid;
   connected = true;
   offline = false;
   showBanner();
+  $("auth").hidden = true;
+  $("logoutBtn").hidden = false;
+  rebuild();
+  if (rankingReady) syncProfile();
+  renderBoard();
+  renderChapters();
+}
 
-  let first = true;
+// la primera vez que hay cuenta y ranking confirmado por el servidor: recién ahí se sabe qué nombres están tomados
+function syncProfile() {
+  if (synced || !connected || !rankingReady) return;
+  synced = true;
+  const me = players.find((p) => p.id === myId);
+  if (me && me.name && !myName) { myName = me.name; store.set("pomo.name", myName); $("gate").hidden = true; }
+  if (myName && (!me || me.name !== myName)) {
+    if (nameTaken(myName)) {
+      // el nombre guardado en este dispositivo ya lo usa otra persona: pedir otro antes de guardarlo
+      openGate(myName);
+      $("gateErr").textContent = TAKEN_MSG;
+    } else writeProfile({ name: myName });
+  } else if (!myName) openGate("");
+  flush();
+}
+
+function watch() {
+  if (unwatch) return;
   unwatch = watchPlayers((docs, fromCache) => {
     rawDocs = docs;
     rebuild();
-    const me = players.find((p) => p.id === myId);
-    // la primera vez que el servidor confirma el ranking: recién ahí se sabe qué nombres están tomados
-    if (first && !fromCache) {
-      first = false;
-      markRankingReady();
-      if (me && me.name && !myName) { myName = me.name; store.set("pomo.name", myName); $("gate").hidden = true; }
-      if (myName && (!me || me.name !== myName)) {
-        if (nameTaken(myName)) {
-          // el nombre guardado en este dispositivo ya lo usa otra persona: pedir otro antes de guardarlo
-          openGate(myName);
-          $("gateErr").textContent = TAKEN_MSG;
-        } else writeProfile({ name: myName });
-      }
-      flush();
-    }
+    if (!fromCache && !rankingReady) markRankingReady();
+    syncProfile();
     if (offline) { offline = false; showBanner(); }
     checkClimbs();
     renderBoard();
     renderChapters();
+    if (!$("auth").hidden) renderAuth();
   }, () => { offline = true; showBanner(); });
 }
+
+// ---------- Cuenta: registro, inicio de sesión y salida ----------
+let authMode = "register";
+let authBusy = false;
+const AUTH_ERRORS = {
+  "auth/email-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Ya tengo cuenta\" para entrar.",
+  "auth/credential-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Ya tengo cuenta\" para entrar.",
+  "auth/invalid-email": "Ese correo no es válido.",
+  "auth/missing-email": "Escribí tu correo.",
+  "auth/weak-password": "La contraseña tiene que tener al menos 6 caracteres.",
+  "auth/missing-password": "Escribí tu contraseña.",
+  "auth/invalid-credential": "Correo o contraseña incorrectos.",
+  "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
+  "auth/wrong-password": "Correo o contraseña incorrectos.",
+  "auth/user-not-found": "Correo o contraseña incorrectos.",
+  "auth/too-many-requests": "Demasiados intentos. Esperá un rato y probá de nuevo.",
+  "auth/network-request-failed": "Sin conexión. Para entrar necesitás internet.",
+  "auth/operation-not-allowed": "Falta activar el inicio con correo y contraseña en Firebase."
+};
+const authError = (e) => AUTH_ERRORS[e && e.code] || "No se pudo. Probá de nuevo.";
+
+function openAuth(mode) {
+  authMode = mode;
+  $("authErr").textContent = "";
+  $("authErr").className = "gate-err";
+  $("authName").value = myName;
+  $("authPass").value = "";
+  $("gate").hidden = true;
+  $("auth").hidden = false;
+  renderAuth();
+  setTimeout(() => { try { $(mode === "register" && !$("authName").value ? "authName" : "authEmail").focus(); } catch {} }, 50);
+}
+// minutos que esta persona ya sumó sin cuenta en este dispositivo
+function anonMinutes() {
+  const me = players.find((p) => p.id === myId);
+  return me ? me.total.m : 0;
+}
+function renderAuth() {
+  const reg = authMode === "register";
+  const mins = anonMinutes();
+  // el ranking puede llegar después de abrir la pantalla: completa el nombre que ya tenía sin cuenta
+  const me = players.find((p) => p.id === myId);
+  if (!$("authName").value && me && me.name) $("authName").value = me.name;
+  $("authTitle").textContent = reg ? "Creá tu cuenta" : "Entrá a tu cuenta";
+  $("authText").textContent = reg
+    ? (mins > 0
+      ? `Para seguir compitiendo, creá tu cuenta. Tus ${mins} minutos y tu nombre se mantienen, y vas a poder entrar desde cualquier dispositivo.`
+      : "Con tu cuenta entrás desde cualquier dispositivo y tus minutos te siguen.")
+    : (mins > 0
+      ? `Ojo: los ${mins} minutos que sumaste en este dispositivo sin cuenta quedan en una fila aparte. Si son tuyos y es tu primera vez, mejor creá la cuenta.`
+      : "Usá el correo y la contraseña con los que te registraste.");
+  $("authNameField").hidden = !reg;
+  $("authPass").autocomplete = reg ? "new-password" : "current-password";
+  $("authPass").placeholder = reg ? "Al menos 6 caracteres" : "";
+  $("authBtn").textContent = reg ? "Crear cuenta" : "Entrar";
+  $("authSwitch").textContent = reg ? "Ya tengo cuenta" : "Crear una cuenta nueva";
+  $("authForgot").hidden = reg;
+}
+$("authSwitch").addEventListener("click", () => openAuth(authMode === "register" ? "login" : "register"));
+
+$("authForgot").addEventListener("click", async () => {
+  const email = $("authEmail").value.trim();
+  const err = $("authErr");
+  if (!email) { err.className = "gate-err"; err.textContent = "Escribí tu correo y te mandamos un enlace para cambiar la contraseña."; return; }
+  try {
+    await resetPassword(email);
+    err.className = "gate-err ok";
+    err.textContent = "Si ese correo tiene cuenta, te llega un enlace para cambiar la contraseña.";
+  } catch (e) { err.className = "gate-err"; err.textContent = authError(e); }
+});
+
+$("authForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (authBusy) return;
+  const err = $("authErr");
+  err.className = "gate-err"; err.textContent = "";
+  const email = $("authEmail").value.trim();
+  const pass = $("authPass").value;
+  const reg = authMode === "register";
+  const name = $("authName").value.replace(/\s+/g, " ").trim().slice(0, 24);
+  if (reg && !name) { err.textContent = "Escribí un nombre para aparecer en el ranking."; return; }
+  if (!email) { err.textContent = AUTH_ERRORS["auth/missing-email"]; return; }
+  if (!pass) { err.textContent = AUTH_ERRORS["auth/missing-password"]; return; }
+  unlockAudio();
+  authBusy = true;
+  const btn = $("authBtn"), label = btn.textContent;
+  btn.disabled = true; btn.textContent = reg ? "Creando cuenta…" : "Entrando…";
+  try {
+    if (reg) {
+      // antes de aceptar el nombre, espera a que llegue el ranking
+      await waitRanking(8000);
+      if (nameTaken(name)) { err.textContent = TAKEN_MSG; return; }
+      const uid = await register(email, pass);
+      myName = name;
+      store.set("pomo.name", name);
+      enter(uid);
+    } else {
+      const uid = await logIn(email, pass);
+      // el nombre y los minutos salen de la cuenta, no de lo que había en este dispositivo
+      myName = "";
+      store.set("pomo.name", "");
+      store.set("pomo.localDays", {});
+      store.set("pomo.localChapters", {});
+      enter(uid);
+    }
+  } catch (e2) {
+    err.textContent = authError(e2);
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+    authBusy = false;
+  }
+});
 
 // ---------- Arranque ----------
 export function startApp() {
@@ -794,7 +935,8 @@ export function startApp() {
   if (timer.status === "running") { keepAwake(true); planAlerts(); }
   renderTimer();
   renderBoard();
-  if (!myName) openGate("");
+  // sin Firebase configurado no hay cuentas: alcanza con el nombre
+  if (!myName && !isConfigured()) openGate("");
   connect();
   checkForUpdate();
 }

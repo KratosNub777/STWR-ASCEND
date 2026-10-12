@@ -4,7 +4,7 @@
 
 import { initializeApp } from "firebase/app";
 import {
-  getAuth, signInAnonymously, connectAuthEmulator, EmailAuthProvider, linkWithCredential,
+  getAuth, connectAuthEmulator, EmailAuthProvider, linkWithCredential,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut
 } from "firebase/auth";
 import {
@@ -49,15 +49,6 @@ export async function currentAccount() {
   const u = auth.currentUser;
   if (u) uid = u.uid;
   return u ? { uid: u.uid, anonymous: u.isAnonymous, email: u.email || "" } : null;
-}
-
-/** Inicia sesión anónima (o recupera la guardada en este dispositivo) y devuelve el uid. */
-export async function signIn() {
-  init();
-  await auth.authStateReady();
-  if (!auth.currentUser) await signInAnonymously(auth);
-  uid = auth.currentUser.uid;
-  return uid;
 }
 
 /** Crea una cuenta. Si el dispositivo tenía una cuenta anónima, la convierte (mismo uid, mismos minutos). */
