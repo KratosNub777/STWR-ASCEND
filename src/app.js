@@ -817,8 +817,8 @@ function watch() {
 let authMode = "register";
 let authBusy = false;
 const AUTH_ERRORS = {
-  "auth/email-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Ya tengo cuenta\" para entrar.",
-  "auth/credential-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Ya tengo cuenta\" para entrar.",
+  "auth/email-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Iniciar sesión\" para entrar.",
+  "auth/credential-already-in-use": "Ese correo ya tiene una cuenta. Tocá \"Iniciar sesión\" para entrar.",
   "auth/invalid-email": "Ese correo no es válido.",
   "auth/missing-email": "Escribí tu correo.",
   "auth/weak-password": "La contraseña tiene que tener al menos 6 caracteres.",
@@ -867,7 +867,8 @@ function renderAuth() {
   $("authPass").autocomplete = reg ? "new-password" : "current-password";
   $("authPass").placeholder = reg ? "Al menos 6 caracteres" : "";
   $("authBtn").textContent = reg ? "Crear cuenta" : "Entrar";
-  $("authSwitch").textContent = reg ? "Ya tengo cuenta" : "Crear una cuenta nueva";
+  $("authSwitchLead").textContent = reg ? "¿Ya tenés cuenta?" : "¿Todavía no tenés cuenta?";
+  $("authSwitch").textContent = reg ? "Iniciar sesión" : "Crear una cuenta nueva";
   $("authForgot").hidden = reg;
 }
 $("authSwitch").addEventListener("click", () => openAuth(authMode === "register" ? "login" : "register"));
