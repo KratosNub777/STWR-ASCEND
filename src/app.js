@@ -925,6 +925,17 @@ $("authForm").addEventListener("submit", async (e) => {
   }
 });
 
+$("logoutBtn").addEventListener("click", async () => {
+  const msg = pending.length
+    ? `Tenés ${pending.length} ${pending.length === 1 ? "sesión que todavía no se guardó" : "sesiones que todavía no se guardaron"}. Si cerrás sesión ahora, se pierden. ¿Cerrar sesión igual?`
+    : "¿Cerrar sesión en este dispositivo?";
+  if (!confirm(msg)) return;
+  try { await logOut(); } catch {}
+  // lo guardado en el dispositivo era de esta cuenta
+  ["pomo.name", "pomo.pending", "pomo.localDays", "pomo.localChapters"].forEach((k) => store.set(k, k === "pomo.name" ? "" : k === "pomo.pending" ? [] : {}));
+  location.reload();
+});
+
 // ---------- Arranque ----------
 export function startApp() {
   if (timer.phase !== "study" && !timer.mins[timer.phase]) { timer.phase = "study"; timer.status = "idle"; timer.remaining = dur("study"); }
