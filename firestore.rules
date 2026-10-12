@@ -82,3 +82,15 @@ service cloud.firestore {
       && d.days[d.lastDay].s == oldDay.s + ds
       && validChapters(d, o, dm, ds);
   }
+
+  function validChapters(d, o, dm, ds) {
+    let chDiff = d.chapters.diff(o.chapters);
+    let key = ('current' in d) ? string(d.current) : '';
+    return (chDiff.addedKeys().size() == 0 && chDiff.changedKeys().size() == 0)
+      || ('current' in d
+          && chDiff.addedKeys().union(chDiff.changedKeys()).hasOnly([key])
+          && validCounter(d.chapters[key])
+          && d.chapters[key].m == o.chapters.get(key, {'m': 0, 's': 0}).m + dm
+          && d.chapters[key].s == o.chapters.get(key, {'m': 0, 's': 0}).s + ds);
+  }
+}
