@@ -340,3 +340,32 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "visible") { tick(); if (timer.status === "running") keepAwake(true); }
 });
 setInterval(tick, 250);
+
+// ---------- Registro de sesiones ----------
+function recordSession(when) {
+  pending.push({ day: dayKey(when), at: when.getTime(), chapter: timer.chapter, m: timer.mins.study });
+  store.set("pomo.pending", pending);
+  // se ve al instante en la tabla, aunque la base tarde
+  rebuild(); renderBoard(); renderChapters();
+  flush();
+}
+function applySessions(days, list) {
+  list.forEach(({ day, m }) => {
+    const d = days[day] || { m: 0, s: 0 };
+    days[day] = { m: (Number(d.m) || 0) + sessionMins(m), s: (Number(d.s) || 0) + 1 };
+  });
+}
+// las sesiones viejas en cola no traían minutos: eran de 25
+const sessionMins = (m) => (validMins("study", m) ? m : 25);
+function applyChapters(chapters, list) {
+  list.forEach(({ chapter, m }) => {
+    if (!validChap(chapter)) return;
+    const c = chapters[chapter] || { m: 0, s: 0 };
+    chapters[chapter] = { m: (Number(c.m) || 0) + sessionMins(m), s: (Number(c.s) || 0) + 1 };
+  });
+}
+function pruneDays(days) {
+  const cutoff = dayKey(addDays(new Date(), -KEEP_DAYS));
+  Object.keys(days).forEach((k) => { if (k < cutoff) delete days[k]; });
+  return days;
+}
