@@ -58,7 +58,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: android-actions/setup-android@v3
+      # el kit de Android ya viene instalado en los servidores de GitHub (ANDROID_HOME)
       - run: npm ci
       - run: npm run build
         env:
