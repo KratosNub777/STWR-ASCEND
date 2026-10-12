@@ -280,9 +280,11 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 /* Pantalla de entrada */
 .gate {
   position: fixed; inset: 0; z-index: 20; background: var(--bg);
-  display: grid; place-items: center; padding: 24px 16px;
+  display: grid; padding: 24px 16px;
+  overflow-y: auto; overscroll-behavior: contain;
 }
-.gate-card { width: 100%; max-width: 380px; display: grid; gap: 16px; }
+/* margin:auto centra cuando sobra lugar y deja hacer scroll cuando la tarjeta es más alta que la ventana */
+.gate-card { width: 100%; max-width: 380px; display: grid; gap: 16px; margin: auto; }
 .gate-card h2 { font-family: var(--font-display); font-weight: 800; font-size: 2rem; line-height: 1.05; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
 .gate-card p { color: var(--muted); margin: 0; }
 .field { display: grid; gap: 6px; }
