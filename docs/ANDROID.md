@@ -31,3 +31,22 @@ También está en **https://github.com/KratosNub777/STWR-ASCEND/releases** (arch
 3. La primera vez Android avisa que no permite instalar apps de esta fuente. Tocá **Configuración** y activá **Permitir de esta fuente** para la app desde la que lo abriste (Chrome, WhatsApp o Archivos). Volvé atrás.
 4. Tocá **Instalar**. Si aparece "Google Play Protect" diciendo que la app es desconocida, tocá **Más detalles** → **Instalar de todas formas**. Es normal en apps que no están en Play Store.
 5. Abrí **STWR-ASCEND**. La primera vez que inicies una sesión te va a pedir permiso para **notificaciones**: tocá **Permitir**, así suena aunque el celular esté bloqueado.
+
+## 4. Pasárselo a tus amigos
+
+Mandales por WhatsApp el link fijo del paso 2. Cada uno sigue los pasos del punto 3.
+
+Mensaje listo para copiar:
+
+> Bajate la app de STWR-ASCEND para competir estudiando: https://github.com/KratosNub777/STWR-ASCEND/releases/latest/download/STWR-ASCEND.apk
+> Si el Android te frena, tocá "Configuración" y "Permitir de esta fuente". Si no tenés Android, usá la web: https://kratosnub777.github.io/STWR-ASCEND/
+
+## 5. Actualizaciones
+
+Cuando se sube un cambio, GitHub publica un APK nuevo en unos 5 a 10 minutos.
+La app instalada se da cuenta sola y muestra arriba **"Hay una versión nueva de la app"**: se toca, se descarga y se instala encima. No se pierden los datos ni el lugar en el ranking.
+
+## Si algo falla
+
+- **"La app no está instalada" o "conflicto con un paquete existente"**: el APK nuevo tiene otra firma. Pasa solo si cambió la clave o la contraseña. Hay que desinstalar y volver a instalar (se pierde la identidad anónima en ese celular).
+- **No suena la notificación**: revisá Ajustes → Apps → STWR-ASCEND → Notificaciones (activadas) y que la batería no esté en modo "restringido" para la app.
