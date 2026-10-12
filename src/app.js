@@ -708,3 +708,41 @@ setInterval(() => {
   if (k !== lastDay) { lastDay = k; prevRanks = null; }
   renderBoard();
 }, 60e3);
+
+// ---------- Conexión con la base compartida ----------
+let connecting = false;
+let unwatch = null;
+async function connect() {
+  if (!isConfigured()) { showBanner(); return; }
+  if (connecting || connected) return;
+  connecting = true;
+  try {
+    myId = await signIn();
+  } catch {
+    // sin internet en el primer uso: se reintenta cuando vuelva la conexión
+    offline = true; showBanner();
+    connecting = false;
+    return;
+  }
+  connecting = false;
+  connected = true;
+  offline = false;
+  showBanner();
+
+  let first = true;
+  unwatch = watchPlayers((docs) => {
+    rawDocs = docs;
+    rebuild();
+    const me = players.find((p) => p.id === myId);
+    if (first) {
+      first = false;
+      if (me && me.name && !myName) { myName = me.name; store.set("pomo.name", myName); $("gate").hidden = true; }
+      if (myName && (!me || me.name !== myName)) writeProfile({ name: myName });
+      flush();
+    }
+    if (offline) { offline = false; showBanner(); }
+    checkClimbs();
+    renderBoard();
+    renderChapters();
+  }, () => { offline = true; showBanner(); });
+}
