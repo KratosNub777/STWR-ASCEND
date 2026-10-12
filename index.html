@@ -132,7 +132,9 @@ button { cursor: pointer; }
 .chapters-head label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 .chapters-head span { font-size: .82rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .chapters-head span b { color: var(--fg); font-weight: 600; }
-.setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+.setup-grid .wide { grid-column: 1 / -1; }
+.setup-grid .pick { align-content: end; }
 .pick { display: grid; gap: 5px; min-width: 0; }
 .pick label { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 .pick select {
@@ -308,9 +310,9 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
         <select id="chapSelect"></select>
       </div>
       <div class="setup-grid">
-        <div class="pick"><label for="durStudy">Estudio</label><select id="durStudy"></select></div>
-        <div class="pick"><label for="durShort">Descanso</label><select id="durShort"></select></div>
-        <div class="pick"><label for="durLong">Largo</label><select id="durLong"></select></div>
+        <div class="pick wide"><label for="durStudy">Tiempo de estudio</label><select id="durStudy"></select></div>
+        <div class="pick"><label for="durShort">Descanso corto</label><select id="durShort"></select></div>
+        <div class="pick"><label for="durLong">Descanso largo (cada 4)</label><select id="durLong"></select></div>
       </div>
     </div>
     <div class="cycle" id="cycle" aria-label="Sesiones del ciclo"></div>
@@ -352,7 +354,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     <ul class="rules">
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
       <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00.</li>
-      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos.</li>
+      <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido.</li>
       <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
     </ul>
@@ -368,8 +370,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   // ---------- Constantes ----------
   const OPTIONS = {
     study: [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90],
-    short: [3, 5, 10, 15],
-    long: [10, 15, 20, 25, 30]
+    short: [0, 3, 5, 10, 15],
+    long: [0, 10, 15, 20, 25, 30]
   };
   const DEFAULT_MINS = { study: 25, short: 5, long: 15 };
   const dur = (phase) => timer.mins[phase] * 60e3;
@@ -410,6 +412,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     store.get("pomo.timer", {})
   );
   if (!OPTIONS[timer.phase]) timer.phase = "study";
+  const minsLabel = (m) => (m === 0 ? "Sin descanso" : `${m} min`);
   timer.mins = Object.assign({ ...DEFAULT_MINS }, timer.mins);
   Object.keys(OPTIONS).forEach((k) => { if (!OPTIONS[k].includes(timer.mins[k])) timer.mins[k] = DEFAULT_MINS[k]; });
   const CHAPTERS = 13;
@@ -502,9 +505,18 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       timer.cycle = (timer.cycle || 0) + 1;
       recordSession(new Date(timer.endAt || Date.now()));
       const long = timer.cycle >= 4;
-      toast(long ? `<b>¡Cuarta sesión completa!</b> Te ganaste ${timer.mins.long} minutos de descanso.`
-                 : `<b>+${timer.mins.study} minutos</b> de Capítulo ${timer.chapter} sumados al ranking. Ahora, ${timer.mins.short} minutos de descanso.`);
-      setPhase(long ? "long" : "short", true);
+      if (long) timer.cycle = timer.mins.long === 0 ? 0 : timer.cycle;
+      const next = long ? "long" : "short";
+      const gained = `<b>+${timer.mins.study} minutos</b> de Capítulo ${timer.chapter} sumados al ranking.`;
+      if (timer.mins[next] === 0) {
+        // sin descanso: la próxima sesión de estudio arranca sola
+        toast(`${gained} Seguís de corrido con la próxima sesión.`);
+        setPhase("study", true);
+      } else {
+        toast(long ? `<b>¡Cuarta sesión completa!</b> Te ganaste ${timer.mins.long} minutos de descanso.`
+                   : `${gained} Ahora, ${timer.mins.short} minutos de descanso.`);
+        setPhase(next, true);
+      }
     } else {
       if (finished === "long") timer.cycle = 0;
       keepAwake(false);
@@ -562,7 +574,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     renderChapters();
     const done = timer.cycle || 0;
     $("cycle").innerHTML = Array.from({ length: 4 }, (_, i) => `<i class="${i < done ? "done" : ""}"></i>`).join("")
-      + `<span>${done}/4 hasta el descanso largo</span>`;
+      + `<span>${timer.mins.long === 0 ? `${done}/4 del ciclo · sin descanso largo` : `${done}/4 hasta el descanso largo`}</span>`;
     renderClock();
   }
 
@@ -573,7 +585,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     const cs = $("chapSelect");
     for (let i = 1; i <= CHAPTERS; i++) cs.add(new Option(`Capítulo ${i}`, String(i)));
     Object.entries(SELECTS).forEach(([k, id]) => {
-      OPTIONS[k].forEach((m) => $(id).add(new Option(`${m} min`, String(m))));
+      OPTIONS[k].forEach((m) => $(id).add(new Option(minsLabel(m), String(m))));
     });
   }
   function renderChapters() {
@@ -583,8 +595,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     cs.disabled = locked;
     Object.entries(SELECTS).forEach(([k, id]) => { $(id).value = String(timer.mins[k]); $(id).disabled = locked; });
     $("tabStudy").textContent = `Estudio ${timer.mins.study}′`;
-    $("tabShort").textContent = `Descanso ${timer.mins.short}′`;
-    $("tabLong").textContent = `Largo ${timer.mins.long}′`;
+    $("tabShort").textContent = timer.mins.short ? `Descanso ${timer.mins.short}′` : "Sin descanso";
+    $("tabLong").textContent = timer.mins.long ? `Largo ${timer.mins.long}′` : "Sin largo";
     const mine = myChapters()[timer.chapter];
     const m = mine ? Number(mine.m) || 0 : 0;
     $("chapInfo").innerHTML = locked && timer.phase === "study" ? "Estudiando ahora" : `Llevás <b>${m} min</b>`;
@@ -601,7 +613,10 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       const n = Number(e.target.value);
       if (!OPTIONS[k].includes(n)) return renderChapters();
       timer.mins[k] = n;
-      if (timer.phase === k) timer.remaining = dur(k);
+      if (timer.phase === k) {
+        if (n === 0) { setPhase("study", false); return; }
+        timer.remaining = dur(k);
+      }
       saveTimer(); renderTimer();
     });
   });
@@ -958,6 +973,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   }
 
   // ---------- Arranque ----------
+  if (timer.phase !== "study" && !timer.mins[timer.phase]) { timer.phase = "study"; timer.status = "idle"; timer.remaining = dur("study"); }
   if (timer.status === "running" && Date.now() >= timer.endAt) {
     // terminó mientras la página estaba cerrada: se completa igual
     completePhase();
