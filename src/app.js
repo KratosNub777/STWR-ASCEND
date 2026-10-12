@@ -954,6 +954,9 @@ export function startApp() {
   checkForUpdate();
 }
 
+// El enlace para bajar la app solo tiene sentido en la web, no dentro de la app ya instalada
+if (isNative()) document.querySelectorAll(".apk-link").forEach((a) => { a.hidden = true; });
+
 // App Android: avisa si hay un APK más nuevo publicado
 async function checkForUpdate() {
   const mine = Number(import.meta.env.VITE_APP_VERSION) || 0;

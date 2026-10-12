@@ -324,6 +324,18 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 .link-btn { background: none; border: 0; padding: 4px 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: .9rem; }
 .link-btn:hover { color: var(--fg); }
 
+/* Descarga del APK (solo en la web) */
+.apk-link {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); color: var(--fg);
+  padding: 11px 14px; font-weight: 600; font-size: .92rem; text-decoration: none;
+  transition: border-color .2s, background .2s;
+}
+.apk-link:hover { border-color: var(--mint); background: var(--mint-soft); }
+.apk-link svg { width: 17px; height: 17px; color: var(--mint); flex: none; }
+.apk-main { justify-self: start; }
+@media (min-width: 860px) { .apk-main { grid-column: 1 / -1; } }
+
 /* Mensajes */
 .toast-zone {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; justify-items: center; gap: 8px;
