@@ -88,3 +88,43 @@ button { cursor: pointer; }
   width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
 }
 .icon-btn svg { width: 15px; height: 15px; }
+
+/* Tarjetas */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 20px; min-width: 0; }
+
+/* Temporizador */
+.timer { display: grid; gap: 18px; justify-items: center; text-align: center; }
+.phase-tabs { display: flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 999px; }
+.phase-tabs span {
+  padding: 6px 12px; border-radius: 999px; font-size: .82rem; font-weight: 600; color: var(--muted);
+  letter-spacing: .02em; white-space: nowrap;
+}
+.phase-tabs span.on { background: var(--phase-soft); color: var(--phase); }
+.ring-wrap { position: relative; width: min(280px, 78vw); aspect-ratio: 1; max-width: 100%; }
+.ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-track { fill: none; stroke: var(--surface-2); stroke-width: 10; }
+.ring-bar { fill: none; stroke: var(--phase); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset .3s linear, stroke .4s; }
+.ring-center { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; }
+.clock {
+  font-family: var(--font-display); font-weight: 700; font-size: clamp(3.2rem, 17vw, 4.4rem);
+  line-height: 1; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.clock-sub { color: var(--muted); font-size: .9rem; }
+.cycle { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: .82rem; }
+.cycle i { width: 10px; height: 10px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line); display: inline-block; }
+.cycle i.done { background: var(--tomato); border-color: var(--tomato); }
+.controls { display: flex; gap: 10px; width: 100%; max-width: 340px; }
+.btn {
+  flex: 1; border: 0; border-radius: var(--r-md); padding: 14px 16px;
+  font-weight: 700; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  transition: transform .12s ease, background .2s, opacity .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn svg { width: 18px; height: 18px; }
+.btn-primary { background: var(--phase); color: #1a0f0c; }
+.btn-ghost { background: var(--surface-2); color: var(--fg); flex: 0 0 auto; min-width: 118px; }
+.btn-ghost.warn { background: rgba(255, 138, 138, .14); color: var(--danger); }
+.link-btn { border: 0; background: none; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: .88rem; padding: 4px; }
+.chapters { width: 100%; max-width: 360px; display: grid; gap: 10px; text-align: left; }
+.setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.setup-grid .wide { grid-column: 1 / -1; }
