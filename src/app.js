@@ -369,3 +369,114 @@ function pruneDays(days) {
   Object.keys(days).forEach((k) => { if (k < cutoff) delete days[k]; });
   return days;
 }
+
+// ---------- Guardado en Firestore ----------
+// Las escrituras van en fila, de a una. Las sesiones se guardan en tandas del mismo día y capítulo,
+// que es lo que validan las reglas de seguridad (firestore.rules).
+let chain = Promise.resolve();
+function queue(task) {
+  chain = chain.then(task).catch(onWriteError);
+  return chain;
+}
+let retryTimer = 0;
+function onWriteError(e) {
+  const code = e && e.code;
+  if (code === "permission-denied") {
+    // las reglas rechazaron el guardado (por ejemplo, minutos que todavía no pasaron): reintenta más tarde
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(flush, 5 * 60e3);
+  } else if (code === "resource-exhausted") {
+    toast("<b>La base del ranking llegó a su límite gratis de hoy.</b> Tus sesiones quedan guardadas y se suman mañana.");
+  }
+  // sin conexión u otros errores: la cola sigue en el dispositivo y se reintenta al volver la conexión
+  return false;
+}
+const ready = () => connected && !!myId;
+
+async function ensureDoc() {
+  const cur = await loadMine();
+  if (cur) return cur;
+  if (!myName) return null;
+  await createMine(myName);
+  return loadMine();
+}
+
+// nombre o capítulo actual: no suma minutos
+function writeProfile(fields) {
+  if (!ready()) return;
+  queue(async () => {
+    const cur = await ensureDoc();
+    if (!cur) return;
+    const patch = {};
+    if (fields.name && cur.name !== fields.name) patch.name = fields.name;
+    if (validChap(fields.current) && cur.current !== fields.current) patch.current = fields.current;
+    if (Object.keys(patch).length) await updateMine(patch, false);
+  });
+}
+
+function dropPending(list) {
+  pending = pending.filter((x) => !list.includes(x));
+  store.set("pomo.pending", pending);
+  rebuild(); renderBoard(); renderChapters();
+}
+
+let flushing = false;
+function flush() {
+  if (!pending.length || flushing || !ready()) return;
+  flushing = true;
+  let saved = false;
+  queue(async () => {
+    const cur = await ensureDoc();
+    if (!cur) return;
+    // lo que ya está en la base (por ejemplo, guardado sin conexión antes de cerrar la app) no se vuelve a sumar
+    const done = Number(cur.lastSession) || 0;
+    const stale = pending.filter((x) => x.at <= done);
+    if (stale.length) dropPending(stale);
+    const fresh = pending.filter((x) => x.at > done);
+    if (!fresh.length) { saved = true; return; }
+    const first = fresh[0];
+    const batch = [];
+    for (const x of fresh) {
+      if (x.day !== first.day || x.chapter !== first.chapter || batch.length >= 20) break;
+      batch.push(x);
+    }
+    const days = clone(cur.days), chapters = clone(cur.chapters), total = readTotal(cur.total, cur.days);
+    applySessions(days, batch);
+    applyChapters(chapters, batch);
+    addToTotal(total, batch);
+    const patch = { days: pruneDays(days), chapters, total, lastDay: first.day, lastSession: batch[batch.length - 1].at };
+    if (validChap(first.chapter)) patch.current = first.chapter;
+    await updateMine(patch, true);
+    dropPending(batch);
+    saved = true;
+  }).finally(() => {
+    flushing = false;
+    if (saved && pending.length) flush();
+  });
+}
+window.addEventListener("online", () => { if (!connected) connect(); else flush(); });
+
+// jugadores = lo que dice la base + mis sesiones que todavía no se guardaron
+let rawDocs = [];
+function rebuild() {
+  players = rawDocs.map(({ id, data }) => ({
+    id,
+    name: typeof data.name === "string" ? data.name.slice(0, 24) : "",
+    days: JSON.parse(JSON.stringify(data.days && typeof data.days === "object" ? data.days : {})),
+    chapters: JSON.parse(JSON.stringify(data.chapters && typeof data.chapters === "object" ? data.chapters : {})),
+    total: readTotal(data.total, data.days),
+    current: validChap(data.current) ? data.current : null
+  }));
+  const me = players.find((p) => p.id === myId);
+  if (me) {
+    store.set("pomo.localDays", me.days);
+    store.set("pomo.localChapters", me.chapters);
+    // sesiones de la cola que la base todavía no tiene (las ya guardadas sin conexión no se cuentan dos veces)
+    const mineDoc = rawDocs.find((d) => d.id === myId);
+    const done = Number(mineDoc && mineDoc.data.lastSession) || 0;
+    const notSaved = pending.filter((x) => x.at > done);
+    applySessions(me.days, notSaved);
+    applyChapters(me.chapters, notSaved);
+    addToTotal(me.total, notSaved);
+  }
+}
