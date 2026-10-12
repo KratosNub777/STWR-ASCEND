@@ -611,3 +611,47 @@ function renderBoard() {
     $("champ").hidden = false;
   } else $("champ").hidden = true;
 }
+
+// ---------- Mensajes de ánimo al subir de puesto ----------
+const CHEERS_ME = [
+  "Seguí así, ya casi tocás la cima.",
+  "Ese esfuerzo se nota. Vamos por más.",
+  "Un pomodoro más y quién te para.",
+  "Los demás ya te ven venir."
+];
+const CHEERS_OTHER = [
+  "Se pone picante la tabla.",
+  "¿Lo vas a dejar pasar?",
+  "Hora de abrir los apuntes.",
+  "La competencia está que arde."
+];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+function checkClimbs() {
+  const now = new Date();
+  const wk = dayKey(mondayOf(now));
+  const list = rankList(weekKeys(mondayOf(now)));
+  const ranks = {}, mins = {};
+  list.forEach((p) => { ranks[p.id] = p.pos; mins[p.id] = p.m; });
+  if (prevRanks && prevRanks.weekKey === wk) {
+    list.forEach((p) => {
+      const before = prevRanks.ranks[p.id];
+      if (before && p.pos < before && p.m > (prevRanks.mins[p.id] || 0)) {
+        if (p.id === myId) {
+          toast(`<b>¡Subiste al puesto ${p.pos}!</b> ${p.pos === 1 ? "Ahora sos líder de la semana. Defendé la corona." : pick(CHEERS_ME)}`, true);
+        } else {
+          const safe = escapeHtml(p.name);
+          toast(`<b>${safe} subió al puesto ${p.pos}.</b> ${pick(CHEERS_OTHER)}`);
+        }
+      }
+    });
+  }
+  prevRanks = { weekKey: wk, ranks, mins };
+}
+function toast(html, mine) {
+  const el = document.createElement("div");
+  el.className = "toast" + (mine ? " me-up" : "");
+  el.innerHTML = `${TROPHY}<div>${html}</div>`;
+  $("toasts").append(el);
+  setTimeout(() => el.remove(), 5200);
+  while ($("toasts").children.length > 3) $("toasts").firstChild.remove();
+}
