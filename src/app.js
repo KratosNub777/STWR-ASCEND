@@ -694,3 +694,17 @@ $("gateForm").addEventListener("submit", (e) => {
   unlockAudio();
 });
 $("editName").addEventListener("click", () => openGate(myName));
+
+// ---------- Pestañas ----------
+function setView(v) { view = v; store.set("pomo.view", v); renderBoard(); }
+$("tabDay").addEventListener("click", () => setView("day"));
+$("tabWeek").addEventListener("click", () => setView("week"));
+$("tabAll").addEventListener("click", () => setView("all"));
+
+// refresco por cambio de día/semana (solo render)
+let lastDay = dayKey(new Date());
+setInterval(() => {
+  const k = dayKey(new Date());
+  if (k !== lastDay) { lastDay = k; prevRanks = null; }
+  renderBoard();
+}, 60e3);
