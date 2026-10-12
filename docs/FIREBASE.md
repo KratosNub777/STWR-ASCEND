@@ -41,3 +41,35 @@ Son cinco partes:
 5. Tocá **Ir a la consola**.
 
 Si cerraste esa pantalla: engranaje ⚙ (arriba a la izquierda) → **Configuración del proyecto** → bajá hasta **Tus apps** → **Configuración del SDK** → opción **Configuración**.
+
+## 3. Activar el inicio de sesión anónimo
+
+Así cada persona tiene un identificador propio sin crear cuenta ni contraseña.
+
+1. Menú de la izquierda: **Compilación** (en inglés, *Build*) → **Authentication**.
+2. Tocá **Comenzar**.
+3. Pestaña **Método de acceso** (*Sign-in method*) → elegí **Anónimo** → activá el interruptor → **Guardar**.
+
+## 4. Crear la base de datos y pegar las reglas
+
+1. Menú de la izquierda: **Compilación** → **Firestore Database** → **Crear base de datos**.
+2. Si pregunta la edición, elegí **Standard**.
+3. Ubicación: elegí la más cercana a ustedes, por ejemplo `southamerica-east1 (São Paulo)`. **No se puede cambiar después.** Tocá **Siguiente**.
+4. Elegí **Comenzar en modo de producción** y tocá **Crear**.
+5. Cuando se abra la base, entrá a la pestaña **Reglas**.
+6. Borrá todo lo que hay y pegá el contenido completo del archivo **`firestore.rules`** de este repo.
+7. Tocá **Publicar**.
+
+Listo. La colección `players` no hace falta crearla: aparece sola cuando entra la primera persona.
+
+## 5. Permitir la web publicada (un paso más, 1 minuto)
+
+Firebase solo deja iniciar sesión desde direcciones autorizadas.
+
+1. Menú de la izquierda: **Authentication** → pestaña **Configuración** (*Settings*) → **Dominios autorizados**.
+2. Tocá **Agregar dominio** y escribí: `kratosnub777.github.io`
+3. Tocá **Agregar**.
+
+`localhost` ya viene autorizado: es el que usa la app Android, así que no hay que agregar nada para el APK.
+
+---
