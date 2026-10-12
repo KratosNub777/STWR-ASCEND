@@ -52,3 +52,13 @@ service cloud.firestore {
     return d.total.m == 0 && d.total.s == 0 && d.days.size() == 0 && d.chapters.size() == 0
       && d.lastAt == request.time;
   }
+
+  // cambios sin minutos (nombre, capítulo actual, limpieza de días viejos)
+  function noProgress(d, o) {
+    return d.total == o.total && d.lastAt == o.lastAt
+      && d.days.diff(o.days).addedKeys().size() == 0
+      && d.days.diff(o.days).changedKeys().size() == 0
+      && d.chapters.diff(o.chapters).addedKeys().size() == 0
+      && d.chapters.diff(o.chapters).changedKeys().size() == 0
+      && (!('lastSession' in d) || d.lastSession == o.get('lastSession', 0));
+  }
