@@ -249,10 +249,10 @@ td:last-child { border-radius: 0 12px 12px 0; }
 .tag-lead { background: var(--gold-soft); color: var(--gold); }
 .mini-streak { color: var(--muted); font-size: .78rem; display: inline-flex; gap: 3px; align-items: center; }
 .mini-streak svg { width: 11px; height: 11px; color: var(--tomato); }
-.mins { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+.mins { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
 .mins small { font-family: var(--font-body); color: var(--muted); font-weight: 500; font-size: .75rem; margin-left: 2px; }
 .sess { color: var(--muted); }
-tr.lead td { background: linear-gradient(90deg, var(--gold-soft), var(--surface-2) 70%); }
+tr.lead td { background: linear-gradient(var(--gold-soft), var(--gold-soft)), var(--surface-2); }
 tr.lead .pos { color: var(--gold); }
 tr.me td { box-shadow: inset 0 1px 0 var(--me), inset 0 -1px 0 var(--me); }
 tr.me td:first-child { box-shadow: inset 1px 1px 0 var(--me), inset 0 -1px 0 var(--me); }
@@ -423,13 +423,14 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       <div class="tabs" role="tablist">
         <button role="tab" id="tabDay" aria-selected="false" type="button">Hoy</button>
         <button role="tab" id="tabWeek" aria-selected="true" type="button">Esta semana</button>
+        <button role="tab" id="tabAll" aria-selected="false" type="button">General</button>
       </div>
     </div>
     <div class="board-meta" id="boardMeta"></div>
     <div id="banner" hidden></div>
     <div class="table-wrap" id="tableWrap">
       <table>
-        <thead><tr><th>#</th><th>Nombre</th><th class="num">Minutos</th><th class="num">Sesiones</th></tr></thead>
+        <thead><tr><th>#</th><th>Nombre</th><th class="num" id="thTime">Minutos</th><th class="num">Sesiones</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
     </div>
@@ -443,7 +444,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     </div>
     <ul class="rules">
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
-      <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00.</li>
+      <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00. El <b>General</b> suma todo el tiempo estudiado y nunca se reinicia.</li>
       <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizar</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
       <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
@@ -494,6 +495,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   let canWrite = true;
   let players = [];          // [{id, name, days}]
   let view = store.get("pomo.view", "week");
+  if (!["day", "week", "all"].includes(view)) view = "week";
   let prevRanks = null;      // {weekKey, ranks: {id: pos}, mins: {id: min}}
   let pending = store.get("pomo.pending", []); // sesiones aún sin guardar en la base
 
@@ -861,7 +863,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
         const body = {
           name: cur.name || myName,
           days: JSON.parse(JSON.stringify(cur.days || {})),
-          chapters: JSON.parse(JSON.stringify(cur.chapters || {}))
+          chapters: JSON.parse(JSON.stringify(cur.chapters || {})),
+          total: readTotal(cur.total, cur.days)
         };
         if (validChap(cur.current)) body.current = cur.current;
         const after = mutate(body);
@@ -887,6 +890,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       if (!batch.length) return false;
       applySessions(body.days, batch);
       applyChapters(body.chapters, batch);
+      addToTotal(body.total, batch);
       const last = batch[batch.length - 1];
       if (validChap(last.chapter)) body.current = last.chapter;
     }, () => {
@@ -906,6 +910,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       name: typeof data.name === "string" ? data.name.slice(0, 24) : "",
       days: JSON.parse(JSON.stringify(data.days && typeof data.days === "object" ? data.days : {})),
       chapters: JSON.parse(JSON.stringify(data.chapters && typeof data.chapters === "object" ? data.chapters : {})),
+      total: readTotal(data.total, data.days),
       current: validChap(data.current) ? data.current : null
     }));
     const me = players.find((p) => p.id === myId);
@@ -914,6 +919,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       store.set("pomo.localChapters", me.chapters);
       applySessions(me.days, pending);
       applyChapters(me.chapters, pending);
+      addToTotal(me.total, pending);
     }
   }
 
@@ -930,8 +936,18 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     keys.forEach((k) => { const d = days[k]; if (d) { m += Number(d.m) || 0; s += Number(d.s) || 0; } });
     return { m, s };
   }
+  // total histórico: se guarda aparte porque los días viejos se van borrando
+  function sumDays(days) { return totals(days || {}, Object.keys(days || {})); }
+  function readTotal(t, days) {
+    return t && typeof t === "object" && Number.isFinite(Number(t.m))
+      ? { m: Number(t.m) || 0, s: Number(t.s) || 0 }
+      : sumDays(days);
+  }
+  function addToTotal(total, list) {
+    list.forEach(({ m }) => { total.m += sessionMins(m); total.s += 1; });
+  }
   function rankList(keys) {
-    const list = players.filter((p) => p.name).map((p) => ({ ...p, ...totals(p.days, keys), streak: streakOf(p.days) }));
+    const list = players.filter((p) => p.name).map((p) => ({ ...p, ...(keys === "all" ? p.total : totals(p.days, keys)), streak: streakOf(p.days) }));
     list.sort((a, b) => b.m - a.m || b.s - a.s || a.name.localeCompare(b.name, "es"));
     let pos = 0, last = -1;
     list.forEach((p, i) => { if (p.m !== last) { pos = i + 1; last = p.m; } p.pos = pos; });
@@ -965,11 +981,13 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   function renderBoard() {
     renderMe();
     const now = new Date();
-    const keys = view === "day" ? [dayKey(now)] : weekKeys(mondayOf(now));
+    const keys = view === "day" ? [dayKey(now)] : view === "all" ? "all" : weekKeys(mondayOf(now));
     const list = rankList(keys);
     $("tabDay").setAttribute("aria-selected", String(view === "day"));
     $("tabWeek").setAttribute("aria-selected", String(view === "week"));
-    $("boardTitle").textContent = view === "day" ? "Ranking de hoy" : "Ranking de la semana";
+    $("tabAll").setAttribute("aria-selected", String(view === "all"));
+    $("boardTitle").textContent = { day: "Ranking de hoy", week: "Ranking de la semana", all: "Ranking general" }[view];
+    $("thTime").textContent = view === "all" ? "Tiempo" : "Minutos";
 
     const leaderMins = list.length ? list[0].m : 0;
     const tbody = $("rows");
@@ -991,7 +1009,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
       const nm = document.createElement("span");
       nm.className = "pname"; nm.textContent = p.name;
       line.append(nm);
-      if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${view === "week" ? "Líder" : "Líder de hoy"}</span>`);
+      if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
       if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
       if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
       if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
@@ -999,7 +1017,9 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 
       const tdMin = document.createElement("td");
       tdMin.className = "num";
-      tdMin.innerHTML = `<span class="mins">${p.m}<small>min</small></span>`;
+      tdMin.innerHTML = view === "all" && p.m >= 60
+        ? `<span class="mins">${Math.floor(p.m / 60)}<small>h</small> ${p.m % 60}<small>min</small></span>`
+        : `<span class="mins">${p.m}<small>min</small></span>`;
       const tdSes = document.createElement("td");
       tdSes.className = "num sess";
       tdSes.textContent = p.s;
@@ -1011,6 +1031,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     $("empty").hidden = anyMinutes;
     $("empty").innerHTML = view === "day"
       ? "<strong>Hoy todavía nadie sumó minutos</strong>Completá una sesión de estudio y quedás arriba de la tabla."
+      : view === "all"
+      ? "<strong>Todavía no hay tiempo acumulado</strong>Acá se suma todo lo que estudió cada uno desde que empezó, sin reinicios."
       : "<strong>La semana arranca en cero</strong>Cuando alguien complete una sesión de estudio, aparece acá con sus minutos y sesiones.";
 
     // meta: participantes y reinicio del lunes
@@ -1019,7 +1041,8 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
     const dd = Math.floor(left / 864e5), hh = Math.floor((left % 864e5) / 36e5);
     const people = list.length;
     $("boardMeta").innerHTML = `<span><b>${people}</b> ${people === 1 ? "participante" : "participantes"}</span>`
-      + `<span>Reinicio semanal en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`;
+      + (view === "all" ? "<span>Suma todo lo estudiado, <b>nunca se reinicia</b></span>"
+        : `<span>Reinicio semanal en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
 
     // ganador de la semana pasada
     const lastWeek = rankList(weekKeys(addDays(mondayOf(now), -7)));
@@ -1122,6 +1145,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   function setView(v) { view = v; store.set("pomo.view", v); renderBoard(); }
   $("tabDay").addEventListener("click", () => setView("day"));
   $("tabWeek").addEventListener("click", () => setView("week"));
+  $("tabAll").addEventListener("click", () => setView("all"));
 
   // refresco por cambio de día/semana (solo render)
   let lastDay = dayKey(new Date());
