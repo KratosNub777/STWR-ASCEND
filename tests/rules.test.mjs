@@ -74,3 +74,14 @@ test("no se pueden sumar más minutos que el tiempo que pasó", async () => {
   await seedAna(5);
   await assertFails(updateDoc(doc(as("ana"), "players/ana"), plus25()));
 });
+
+test("los minutos del día y del capítulo tienen que coincidir con el total", async () => {
+  await seedAna(120);
+  const ref = doc(as("ana"), "players/ana");
+  await assertFails(updateDoc(ref, { ...plus25(), days: { "2026-10-12": { m: 500, s: 2 } } }));
+  await assertFails(updateDoc(ref, { ...plus25(), chapters: { "3": { m: 900, s: 2 } } }));
+  // minutos metidos en otro día sin sumarlos al total
+  await assertFails(updateDoc(ref, { days: { "2026-10-12": { m: 25, s: 1 }, "2026-10-11": { m: 300, s: 3 } }, updatedAt: serverTimestamp() }));
+  // dos días distintos en un mismo guardado
+  await assertFails(updateDoc(ref, { ...plus25(), days: { "2026-10-12": { m: 50, s: 2 }, "2026-10-11": { m: 25, s: 1 } } }));
+});
