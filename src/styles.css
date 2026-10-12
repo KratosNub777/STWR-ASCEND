@@ -54,3 +54,37 @@ button { cursor: pointer; }
   .app { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
   .topbar { grid-column: 1 / -1; }
 }
+
+/* Cabecera */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-mark {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ff8f74, var(--tomato) 60%, #c94a2f);
+  position: relative; flex: none;
+}
+.brand-mark::after {
+  content: ""; position: absolute; top: -3px; left: 13px; width: 9px; height: 8px;
+  background: var(--mint); border-radius: 50% 50% 2px 50%; transform: rotate(-20deg);
+}
+.brand h1 { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; margin: 0; letter-spacing: -.01em; }
+.brand small { display: block; color: var(--muted); font-size: .8rem; }
+.me-chip {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 999px; padding: 6px 6px 6px 12px; min-width: 0;
+}
+.me-chip .who { font-weight: 600; max-width: 12ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.streak {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: var(--tomato-soft); color: var(--tomato);
+  border-radius: 999px; padding: 3px 9px; font-weight: 700; font-size: .85rem;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.streak svg { width: 13px; height: 13px; }
+.streak.off { background: var(--surface-2); color: var(--muted); }
+.icon-btn {
+  border: 0; background: var(--surface-2); color: var(--muted);
+  width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+}
+.icon-btn svg { width: 15px; height: 15px; }
