@@ -28,6 +28,32 @@
   </form>
 </div>
 
+<div class="gate" id="auth" hidden>
+  <form class="gate-card" id="authForm" novalidate>
+    <div class="brand-mark" aria-hidden="true"></div>
+    <h2 id="authTitle">Creá tu cuenta</h2>
+    <p id="authText">Con tu cuenta entrás desde cualquier dispositivo y tus minutos te siguen.</p>
+    <div class="field" id="authNameField">
+      <label for="authName">Tu nombre en el ranking</label>
+      <input id="authName" name="authName" maxlength="24" placeholder="Ej.: Sofi" autocomplete="nickname">
+    </div>
+    <div class="field">
+      <label for="authEmail">Correo</label>
+      <input id="authEmail" name="authEmail" type="email" placeholder="tu@correo.com" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label for="authPass">Contraseña</label>
+      <input id="authPass" name="authPass" type="password" placeholder="Al menos 6 caracteres" autocomplete="new-password">
+    </div>
+    <div class="gate-err" id="authErr" role="alert"></div>
+    <button class="btn btn-primary" type="submit" id="authBtn">Crear cuenta</button>
+    <div class="auth-links">
+      <button class="link-btn" type="button" id="authSwitch">Ya tengo cuenta</button>
+      <button class="link-btn" type="button" id="authForgot" hidden>Olvidé mi contraseña</button>
+    </div>
+  </form>
+</div>
+
 <main class="app">
   <a class="update-bar" id="updateBar" href="#" target="_blank" rel="noopener" hidden>
     <b>Hay una versión nueva de la app.</b> Tocá acá para descargarla e instalarla encima (no perdés tus datos).
@@ -45,6 +71,9 @@
       <span class="streak off" id="meStreak" title="Racha de días seguidos estudiando"></span>
       <button class="icon-btn" id="editName" type="button" aria-label="Cambiar mi nombre">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      </button>
+      <button class="icon-btn" id="logoutBtn" type="button" aria-label="Cerrar sesión" title="Cerrar sesión" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>
       </button>
     </div>
   </header>

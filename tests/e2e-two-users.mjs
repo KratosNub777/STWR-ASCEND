@@ -21,8 +21,10 @@ async function person(name) {
   const page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(`${name}: ${e.message}`));
   await page.goto(URL);
-  await page.fill("#nameInput", name);
-  await page.click("#gateBtn");
+  await page.fill("#authName", name);
+  await page.fill("#authEmail", `${name.toLowerCase()}@prueba.com`);
+  await page.fill("#authPass", "secreta123");
+  await page.click("#authBtn");
   return page;
 }
 const rows = (page) => page.$$eval("#rows tr", (trs) => trs.map((r) => r.innerText.replace(/\s+/g, " ").trim()));

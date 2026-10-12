@@ -18,8 +18,10 @@ const ctx = await browser.newContext();
 const page = await ctx.newPage();
 await page.clock.install();
 await page.goto(URL);
-await page.fill("#nameInput", "Caro");
-await page.click("#gateBtn");
+await page.fill("#authName", "Caro");
+await page.fill("#authEmail", "caro@prueba.com");
+await page.fill("#authPass", "secreta123");
+await page.click("#authBtn");
 await sleep(2500);
 const uid = await page.evaluate(() => new Promise((res) => {
   const req = indexedDB.open("firebaseLocalStorageDb");

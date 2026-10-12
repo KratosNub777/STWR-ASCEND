@@ -5,7 +5,7 @@ Tiempo estimado: 10 minutos. No hace falta tarjeta de crédito: se usa el plan g
 Son cinco partes:
 1. Crear el proyecto.
 2. Registrar la app web y copiar la configuración.
-3. Activar el inicio de sesión anónimo.
+3. Activar el inicio de sesión con correo y contraseña.
 4. Crear la base de datos y pegar las reglas.
 5. Autorizar la dirección de la web publicada.
 
@@ -42,13 +42,14 @@ Son cinco partes:
 
 Si cerraste esa pantalla: engranaje ⚙ (arriba a la izquierda) → **Configuración del proyecto** → bajá hasta **Tus apps** → **Configuración del SDK** → opción **Configuración**.
 
-## 3. Activar el inicio de sesión anónimo
+## 3. Activar el inicio de sesión con correo y contraseña
 
-Así cada persona tiene un identificador propio sin crear cuenta ni contraseña.
+Cada persona crea su cuenta con correo y contraseña, y entra con ella desde cualquier dispositivo.
 
 1. Menú de la izquierda: **Compilación** (en inglés, *Build*) → **Authentication**.
 2. Tocá **Comenzar**.
-3. Pestaña **Método de acceso** (*Sign-in method*) → elegí **Anónimo** → activá el interruptor → **Guardar**.
+3. Pestaña **Método de acceso** (*Sign-in method*) → elegí **Correo electrónico/contraseña** → activá el primer interruptor (no hace falta el de "vínculo por correo") → **Guardar**.
+4. Si el proyecto ya existía con **Anónimo** activado, dejalo así: quienes jugaban sin cuenta la convierten en una cuenta con correo y conservan sus minutos.
 
 ## 4. Crear la base de datos y pegar las reglas
 
