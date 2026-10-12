@@ -480,3 +480,49 @@ function rebuild() {
     addToTotal(me.total, notSaved);
   }
 }
+
+// ---------- Racha y totales ----------
+function streakOf(days) {
+  let d = new Date();
+  if (!(days[dayKey(d)] && days[dayKey(d)].s)) d = addDays(d, -1); // hoy todavía cuenta como "en juego"
+  let n = 0;
+  while (days[dayKey(d)] && Number(days[dayKey(d)].s) > 0) { n++; d = addDays(d, -1); }
+  return n;
+}
+function totals(days, keys) {
+  let m = 0, s = 0;
+  keys.forEach((k) => { const d = days[k]; if (d) { m += Number(d.m) || 0; s += Number(d.s) || 0; } });
+  return { m, s };
+}
+// total histórico: se guarda aparte porque los días viejos se van borrando
+function sumDays(days) { return totals(days || {}, Object.keys(days || {})); }
+function readTotal(t, days) {
+  return t && typeof t === "object" && Number.isFinite(Number(t.m))
+    ? { m: Number(t.m) || 0, s: Number(t.s) || 0 }
+    : sumDays(days);
+}
+function addToTotal(total, list) {
+  list.forEach(({ m }) => { total.m += sessionMins(m); total.s += 1; });
+}
+function rankList(keys) {
+  const list = players.filter((p) => p.name).map((p) => ({ ...p, ...(keys === "all" ? p.total : totals(p.days, keys)), streak: streakOf(p.days) }));
+  list.sort((a, b) => b.m - a.m || b.s - a.s || a.name.localeCompare(b.name, "es"));
+  let pos = 0, last = -1;
+  list.forEach((p, i) => { if (p.m !== last) { pos = i + 1; last = p.m; } p.pos = pos; });
+  return list;
+}
+function myChapters() {
+  const me = players.find((p) => p.id === myId);
+  if (me) return me.chapters;
+  const ch = JSON.parse(JSON.stringify(store.get("pomo.localChapters", {})));
+  applyChapters(ch, pending);
+  return ch;
+}
+function localDays() {
+  // mis días según la base más lo pendiente; sirve también sin conexión
+  const me = players.find((p) => p.id === myId);
+  if (me) return me.days;
+  const days = JSON.parse(JSON.stringify(store.get("pomo.localDays", {})));
+  applySessions(days, pending);
+  return days;
+}
