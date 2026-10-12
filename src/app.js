@@ -191,3 +191,152 @@ function renderTimer() {
     + `<span>${timer.mins.long === 0 ? `${done}/4 del ciclo · sin descanso largo` : `${done}/4 hasta el descanso largo`}</span>`;
   renderClock();
 }
+
+// ---------- Capítulo y tiempos ----------
+const SELECTS = { study: "durStudy", short: "durShort", long: "durLong" };
+const CUSTOM = { study: "customStudy", short: "customShort", long: "customLong" };
+function setupLocked() { return timer.status !== "idle"; }
+const valueHtml = (m) => (m === 0 ? '<span class="zero">Sin descanso</span>' : `${m}<small>min</small>`);
+function nearestOption(k, m) {
+  return OPTIONS[k].reduce((best, o) => (Math.abs(o - m) < Math.abs(best - m) ? o : best), OPTIONS[k][0]);
+}
+function applyMins(k, n) {
+  timer.mins[k] = n;
+  if (timer.phase === k && timer.status === "idle") {
+    if (n === 0) { setPhase("study", false); return; }
+    timer.remaining = dur(k);
+  }
+  saveTimer(); renderTimer();
+}
+// Lista desplegable propia (la nativa no se puede estilizar)
+let openDd = null;
+function closeDd(focusBtn) {
+  if (!openDd) return;
+  const { btn, list } = openDd;
+  list.hidden = true; btn.setAttribute("aria-expanded", "false");
+  openDd = null;
+  if (focusBtn) btn.focus();
+}
+function makeDropdown(btnId, items, getValue, onPick) {
+  const btn = $(btnId), list = $(btnId + "List");
+  items.forEach(({ value, html }) => {
+    const o = document.createElement("button");
+    o.type = "button"; o.className = "dd-opt"; o.setAttribute("role", "option");
+    o.dataset.v = String(value); o.tabIndex = -1;
+    o.innerHTML = `<span>${html}</span><span class="dot" aria-hidden="true"></span>`;
+    list.append(o);
+  });
+  const opts = () => [...list.children];
+  function open() {
+    if (btn.disabled) return;
+    closeDd();
+    const cur = String(getValue());
+    opts().forEach((o) => o.setAttribute("aria-selected", String(o.dataset.v === cur)));
+    list.hidden = false; btn.setAttribute("aria-expanded", "true");
+    openDd = { btn, list };
+    const sel = opts().find((o) => o.dataset.v === cur) || opts()[0];
+    sel.focus({ preventScroll: true });
+    sel.scrollIntoView({ block: "nearest" });
+  }
+  btn.addEventListener("click", (e) => { e.stopPropagation(); openDd && openDd.btn === btn ? closeDd() : open(); });
+  btn.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); open(); } });
+  list.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const o = e.target.closest(".dd-opt");
+    if (!o) return;
+    closeDd(true);
+    onPick(Number(o.dataset.v));
+  });
+  list.addEventListener("keydown", (e) => {
+    const all = opts(), i = all.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); all[Math.min(all.length - 1, i + 1)].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); all[Math.max(0, i - 1)].focus(); }
+    else if (e.key === "Escape") { e.preventDefault(); closeDd(true); }
+    else if (e.key === "Tab") closeDd();
+  });
+}
+document.addEventListener("click", () => closeDd());
+function fillSelects() {
+  makeDropdown("chapSelect",
+    Array.from({ length: CHAPTERS }, (_, i) => ({ value: i + 1, html: `Capítulo ${i + 1}` })),
+    () => timer.chapter,
+    (n) => {
+      if (setupLocked() || !validChap(n)) return renderChapters();
+      timer.chapter = n; saveTimer(); renderChapters();
+    });
+  Object.entries(SELECTS).forEach(([k, id]) => {
+    makeDropdown(id,
+      OPTIONS[k].map((m) => ({ value: m, html: m === 0 ? "Sin descanso" : `${m}<span class="muted">min</span>` })),
+      () => timer.mins[k],
+      (n) => {
+        if (setupLocked() || !OPTIONS[k].includes(n)) return renderChapters();
+        applyMins(k, n);
+      });
+  });
+}
+function renderChapters() {
+  const locked = setupLocked();
+  if (locked) closeDd();
+  $("chapSelect").disabled = locked;
+  $("chapValue").textContent = `Capítulo ${timer.chapter}`;
+  $("chapBox").classList.toggle("locked", locked && timer.phase !== "study");
+  Object.entries(SELECTS).forEach(([k, id]) => {
+    const m = timer.mins[k];
+    const custom = timer.custom[k] || !OPTIONS[k].includes(m);
+    const input = $(CUSTOM[k]);
+    $(id).disabled = locked;
+    $(k + "Value").innerHTML = valueHtml(m);
+    $(k + "SelWrap").hidden = custom;
+    $(CUSTOM[k] + "Row").hidden = !custom;
+    $(k + "Hint").hidden = !custom;
+    $(k + "Box").classList.toggle("is-custom", custom);
+    $(k + "Box").classList.toggle("locked", locked);
+    const t = $(k + "Toggle");
+    t.setAttribute("aria-pressed", String(custom));
+    t.lastChild.textContent = custom ? "Personalizado" : "Personalizar";
+    t.disabled = locked;
+    if (document.activeElement !== input) input.value = String(m);
+    input.disabled = locked;
+  });
+  $("tabStudy").textContent = `Estudio ${timer.mins.study}′`;
+  $("tabShort").textContent = timer.mins.short ? `Descanso ${timer.mins.short}′` : "Sin descanso";
+  $("tabLong").textContent = timer.mins.long ? `Largo ${timer.mins.long}′` : "Sin largo";
+  const mine = myChapters()[timer.chapter];
+  const mm = mine ? Number(mine.m) || 0 : 0;
+  $("chapInfo").innerHTML = locked && timer.phase === "study" ? "Estudiando ahora" : `Llevás <b>${mm} min</b>`;
+}
+Object.entries(SELECTS).forEach(([k, id]) => {
+  $(k + "Toggle").addEventListener("click", () => {
+    if (setupLocked()) return;
+    const on = !(timer.custom[k] || !OPTIONS[k].includes(timer.mins[k]));
+    timer.custom[k] = on;
+    if (!on) { applyMins(k, nearestOption(k, timer.mins[k])); return; }
+    saveTimer(); renderChapters();
+    const input = $(CUSTOM[k]);
+    try { input.focus(); input.select(); } catch {}
+  });
+  const input = $(CUSTOM[k]);
+  const commit = () => {
+    if (setupLocked()) return renderChapters();
+    const raw = Math.round(Number(input.value));
+    if (input.value.trim() === "" || !Number.isFinite(raw)) { input.value = String(timer.mins[k]); return; }
+    const n = Math.min(RANGE[k][1], Math.max(RANGE[k][0], raw));
+    input.value = String(n);
+    if (n !== raw) toast(`<b>${k === "study" ? "El estudio" : "El descanso"} va de ${RANGE[k][0]} a ${RANGE[k][1]} minutos.</b> Lo dejé en ${n}.`);
+    applyMins(k, n);
+  };
+  input.addEventListener("change", commit);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); input.blur(); } });
+});
+fillSelects();
+
+$("startBtn").addEventListener("click", () => (timer.status === "running" ? pause() : start()));
+$("resetBtn").addEventListener("click", onReset);
+$("skipBtn").addEventListener("click", () => {
+  if (timer.phase === "long") timer.cycle = 0;
+  keepAwake(false); setPhase("study", false);
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") { tick(); if (timer.status === "running") keepAwake(true); }
+});
+setInterval(tick, 250);
