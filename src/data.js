@@ -53,3 +53,23 @@ export function watchPlayers(cb, onError) {
 }
 
 const myRef = () => doc(db, "players", uid);
+
+/** Mi documento (del servidor, o de la caché si no hay conexión). null si no existe. */
+export async function loadMine() {
+  const snap = await getDoc(myRef());
+  return snap.exists() ? snap.data() : null;
+}
+
+/** Crea mi documento vacío. Las reglas solo aceptan crearlo en cero. */
+export function createMine(name) {
+  return setDoc(myRef(), {
+    name, days: {}, chapters: {}, total: { m: 0, s: 0 },
+    updatedAt: serverTimestamp(), lastAt: serverTimestamp()
+  });
+}
+
+/** Actualiza campos de mi documento. progress = true cuando suma minutos. */
+export function updateMine(patch, progress) {
+  const extra = progress ? { lastAt: serverTimestamp() } : {};
+  return updateDoc(myRef(), { ...patch, ...extra, updatedAt: serverTimestamp() });
+}
