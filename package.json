@@ -1,0 +1,29 @@
+{
+  "name": "stwr-ascend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-stwr",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-stwr \"node --test tests/rules.test.mjs\""
+  },
+  "dependencies": {
+    "@capacitor-community/keep-awake": "^8.0.1",
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/local-notifications": "^8.3.1",
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "@fontsource/figtree": "^5.3.0",
+    "firebase": "12.19.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase-tools": "15.31.0",
+    "playwright": "^1.56.1",
+    "vite": "8.3.1"
+  }
+}
