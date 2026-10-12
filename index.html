@@ -12,8 +12,8 @@
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script type="module" crossorigin src="./assets/index-aT2RVw7k.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-D46fIfs4.css">
+  <script type="module" crossorigin src="./assets/index-BRS2E9uO.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CURfzDtj.css">
 </head>
 <body>
 <div class="gate" id="gate" hidden>
@@ -31,7 +31,7 @@
 </div>
 
 <div class="gate" id="auth" hidden>
-  <form class="gate-card" id="authForm" novalidate>
+  <form class="gate-card auth-card" id="authForm" novalidate>
     <div class="brand-mark" aria-hidden="true"></div>
     <h2 id="authTitle">Creá tu cuenta</h2>
     <p id="authText">Con tu cuenta entrás desde cualquier dispositivo y tus minutos te siguen.</p>
@@ -49,9 +49,10 @@
     </div>
     <div class="gate-err" id="authErr" role="alert"></div>
     <button class="btn btn-primary" type="submit" id="authBtn">Crear cuenta</button>
-    <div class="auth-links">
-      <button class="link-btn" type="button" id="authSwitch">Ya tengo cuenta</button>
-      <button class="link-btn" type="button" id="authForgot" hidden>Olvidé mi contraseña</button>
+    <button class="link-btn auth-forgot" type="button" id="authForgot" hidden>Olvidé mi contraseña</button>
+    <div class="auth-switch">
+      <span class="auth-switch-lead" id="authSwitchLead">¿Ya tenés cuenta?</span>
+      <button class="btn btn-outline" type="button" id="authSwitch">Iniciar sesión</button>
     </div>
   </form>
 </div>
