@@ -128,3 +128,41 @@ button { cursor: pointer; }
 .chapters { width: 100%; max-width: 360px; display: grid; gap: 10px; text-align: left; }
 .setup-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .setup-grid .wide { grid-column: 1 / -1; }
+
+/* Campo de elección: etiqueta arriba, valor grande, lista nativa encima (abre el selector del teléfono) */
+.fbox {
+  position: relative; display: grid; gap: 6px; min-width: 0;
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 16px;
+  padding: 10px 12px 12px; transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.fbox:focus-within { border-color: var(--me); box-shadow: 0 0 0 3px var(--me-soft); }
+.fbox.is-custom { border-color: var(--me); background: linear-gradient(160deg, var(--me-soft), var(--surface-2) 70%); }
+.fbox.chapter { border-color: rgba(255, 107, 74, .45); background: linear-gradient(160deg, var(--tomato-soft), var(--surface-2) 70%); }
+.fbox.chapter:focus-within { border-color: var(--tomato); box-shadow: 0 0 0 3px var(--tomato-soft); }
+.fbox.locked { opacity: .6; }
+.fbox-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap; min-height: 24px; }
+.fbox-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.fbox-note { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.fbox-note b { color: var(--fg); font-weight: 600; }
+.sel-wrap { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.sel-value {
+  font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.15; letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; font-variant-numeric: tabular-nums;
+}
+.sel-value small { font-family: var(--font-body); font-size: .8rem; color: var(--muted); font-weight: 600; margin-left: 3px; }
+.sel-chev {
+  flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--bg); color: var(--muted);
+}
+.sel-chev svg { width: 15px; height: 15px; }
+.sel-btn {
+  all: unset; box-sizing: border-box; cursor: pointer; width: 100%; min-width: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-radius: 12px; margin: -4px -6px; padding: 4px 6px; width: calc(100% + 12px);
+}
+.sel-btn:focus-visible { outline: 2px solid var(--me); outline-offset: 0; }
+.sel-btn:disabled { cursor: not-allowed; }
+.sel-btn[aria-expanded="true"] .sel-chev { background: var(--me); color: #15142a; transform: rotate(180deg); }
+.fbox.chapter .sel-btn[aria-expanded="true"] .sel-chev { background: var(--tomato); }
+.sel-chev { transition: transform .2s ease, background .15s, color .15s; }
+.sel-value .zero { font-size: 1.02rem; white-space: normal; }
