@@ -46,3 +46,9 @@ service cloud.firestore {
       && (!('lastDay' in d) || (d.lastDay is string && d.lastDay.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
       && (!('lastSession' in d) || d.lastSession is int);
   }
+
+  // al crearse, el documento arranca en cero
+  function isEmptyStart(d) {
+    return d.total.m == 0 && d.total.s == 0 && d.days.size() == 0 && d.chapters.size() == 0
+      && d.lastAt == request.time;
+  }
