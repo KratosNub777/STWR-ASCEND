@@ -1,0 +1,56 @@
+/* Layout: una columna tipo app de bolsillo — cabecera con racha, reloj circular, tabla de posiciones; se abre a dos columnas en pantallas anchas. */
+:root {
+  color-scheme: dark;
+  --bg: #12111c;
+  --surface: #1b1a29;
+  --surface-2: #242337;
+  --line: #312f48;
+  --fg: #eeedf7;
+  --muted: #9b99b5;
+  --tomato: #ff6b4a;
+  --tomato-soft: rgba(255, 107, 74, .14);
+  --mint: #5fd3b5;
+  --mint-soft: rgba(95, 211, 181, .14);
+  --gold: #f5c451;
+  --gold-soft: rgba(245, 196, 81, .12);
+  --me: #9c9dff;
+  --me-soft: rgba(156, 157, 255, .13);
+  --danger: #ff8a8a;
+  --phase: var(--tomato);
+  --phase-soft: var(--tomato-soft);
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --r-lg: 22px;
+  --r-md: 14px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { background: var(--bg); }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+img { max-width: 100%; }
+body {
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  padding: 0 16px;
+  min-height: 100%;
+}
+body[data-phase="short"], body[data-phase="long"] { --phase: var(--mint); --phase-soft: var(--mint-soft); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--me); outline-offset: 2px; }
+
+.app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding-block: 18px 40px;
+  display: grid;
+  gap: 18px;
+}
+@media (min-width: 860px) {
+  .app { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+  .topbar { grid-column: 1 / -1; }
+}
