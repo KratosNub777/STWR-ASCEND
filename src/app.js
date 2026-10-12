@@ -670,3 +670,27 @@ function showBanner() {
     b.hidden = false;
   } else b.hidden = true;
 }
+
+// ---------- Entrada con nombre ----------
+function openGate(prefill) {
+  $("nameInput").value = prefill || "";
+  $("gateErr").textContent = "";
+  $("gate").hidden = false;
+  setTimeout(() => { try { $("nameInput").focus(); } catch {} }, 50);
+}
+$("gateForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const v = $("nameInput").value.replace(/\s+/g, " ").trim().slice(0, 24);
+  if (!v) { $("gateErr").textContent = "Escribí un nombre para aparecer en el ranking."; return; }
+  const taken = players.some((p) => p.id !== myId && p.name && p.name.toLowerCase() === v.toLowerCase());
+  if (taken) { $("gateErr").textContent = "Ese nombre ya lo usa otra persona. Probá con otro o agregale una inicial."; return; }
+  myName = v;
+  store.set("pomo.name", v);
+  $("gate").hidden = true;
+  writeProfile({ name: v });
+  const me = players.find((p) => p.id === myId);
+  if (me) me.name = v;
+  renderBoard();
+  unlockAudio();
+});
+$("editName").addEventListener("click", () => openGate(myName));
