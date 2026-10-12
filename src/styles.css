@@ -295,7 +295,27 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 .gate .btn-primary { background: var(--tomato); }
 .gate-err { color: var(--danger); font-size: .85rem; min-height: 1.2em; }
 .gate-err.ok { color: var(--muted); }
-.auth-links { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.auth-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 26px 22px 22px; gap: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .4), 0 0 0 1px rgba(156, 157, 255, .04);
+}
+.auth-card .brand-mark { width: 44px; height: 44px; box-shadow: 0 8px 24px rgba(255, 107, 74, .35); }
+.auth-card .brand-mark::after { top: -4px; left: 17px; width: 11px; height: 10px; }
+.auth-card .field input { background: var(--bg); }
+.auth-card .btn-primary { margin-top: 2px; }
+.auth-forgot { justify-self: start; }
+/* "Ya tengo cuenta": bloque propio y bien visible, separado del formulario */
+.auth-switch {
+  display: grid; gap: 10px; justify-items: center; text-align: center;
+  margin-top: 4px; padding-top: 18px; border-top: 1px solid var(--line);
+}
+.auth-switch-lead { color: var(--fg); font-weight: 600; }
+.btn-outline {
+  flex: none; width: 100%; background: var(--me-soft); color: var(--me);
+  border: 2px solid var(--me); padding: 12px 16px;
+}
+.btn-outline:hover { background: var(--me); color: #14131f; }
 .link-btn { background: none; border: 0; padding: 4px 0; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: .9rem; }
 .link-btn:hover { color: var(--fg); }
 
