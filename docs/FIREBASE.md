@@ -73,6 +73,13 @@ Firebase solo deja iniciar sesión desde direcciones autorizadas.
 
 `localhost` ya viene autorizado: es el que usa la app Android, así que no hay que agregar nada para el APK.
 
+## 6. Correo para recuperar la contraseña (opcional)
+
+La app tiene una pantalla propia de **Recuperar contraseña**: la persona escribe su correo, Firebase le manda un mensaje y ella pega el **código** (o el enlace entero) en la app para elegir una contraseña nueva. No hace falta configurar nada para que funcione.
+
+- Firebase manda estos correos desde `noreply@<proyecto>.firebaseapp.com`; si no aparece, pedí que revisen **spam**.
+- Para personalizar el texto: **Authentication** → pestaña **Plantillas** → **Restablecimiento de contraseña** (lápiz). Si querés que el enlace del correo abra directo la app con el código puesto, en **Personalizar URL de acción** poné `https://kratosnub777.github.io/STWR-ASCEND/`.
+
 ---
 
 ## ¿Cómo sé que funcionó?
