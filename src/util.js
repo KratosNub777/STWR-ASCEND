@@ -25,3 +25,32 @@ export const clone = (v) => JSON.parse(JSON.stringify(v ?? {}));
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
+
+// Confirmación con el diseño de la app (en vez del confirm() del navegador). Devuelve una promesa<boolean>.
+const ICON_LOGOUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>';
+const ICON_WARN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>';
+
+export function confirmDialog({ title, text, okLabel = "Aceptar", cancelLabel = "Cancelar", tone = "logout" }) {
+  const dlg = $("confirmDlg");
+  if (!dlg || typeof dlg.showModal !== "function") return Promise.resolve(window.confirm(`${title}\n\n${text}`));
+  $("confirmTitle").textContent = title;
+  $("confirmText").textContent = text;
+  $("confirmOk").textContent = okLabel;
+  $("confirmCancel").textContent = cancelLabel;
+  const icon = $("confirmIcon");
+  icon.className = "confirm-icon" + (tone === "warn" ? " warn" : "");
+  icon.innerHTML = tone === "warn" ? ICON_WARN : ICON_LOGOUT;
+  return new Promise((resolve) => {
+    const done = () => {
+      dlg.removeEventListener("close", done);
+      dlg.removeEventListener("click", onBackdrop);
+      resolve(dlg.returnValue === "ok");
+    };
+    // un clic fuera de la tarjeta (sobre el fondo) cancela
+    const onBackdrop = (e) => { if (e.target === dlg) dlg.close("cancel"); };
+    dlg.returnValue = "cancel";
+    dlg.addEventListener("close", done);
+    dlg.addEventListener("click", onBackdrop);
+    dlg.showModal();
+  });
+}

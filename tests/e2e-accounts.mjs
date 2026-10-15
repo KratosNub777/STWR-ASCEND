@@ -89,8 +89,8 @@ const r = await rows(b);
 check("su fila con 50 minutos marcada como Vos", r.length === 1 && r[0].includes("Lucas") && /vos/i.test(r[0]) && r[0].includes("50"), JSON.stringify(r));
 
 // 3) Cerrar sesión vuelve a pedir la cuenta
-b.on("dialog", (dlg) => dlg.accept());
 await b.click("#logoutBtn");
+await b.click("#confirmOk");
 await sleep(3000);
 check("al cerrar sesión pide la cuenta otra vez", await b.$eval("#auth", (x) => !x.hidden));
 check("y no queda ningún usuario en el dispositivo", (await authUser(b)) === null);

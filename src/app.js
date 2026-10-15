@@ -1,5 +1,5 @@
 // STWR-ASCEND: reloj, capítulos, tiempos, ranking y racha.
-import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
+import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml, confirmDialog } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
   isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine
@@ -1020,10 +1020,20 @@ $("authForm").addEventListener("submit", async (e) => {
 });
 
 $("logoutBtn").addEventListener("click", async () => {
-  const msg = pending.length
-    ? `Tenés ${pending.length} ${pending.length === 1 ? "sesión que todavía no se guardó" : "sesiones que todavía no se guardaron"}. Si cerrás sesión ahora, se pierden. ¿Cerrar sesión igual?`
-    : "¿Cerrar sesión en este dispositivo?";
-  if (!confirm(msg)) return;
+  const unsaved = pending.length > 0;
+  const ok = await confirmDialog(unsaved
+    ? {
+        tone: "warn",
+        title: "Tenés sesiones sin guardar",
+        text: `${pending.length} ${pending.length === 1 ? "sesión todavía no se guardó" : "sesiones todavía no se guardaron"}. Si cerrás sesión ahora, se pierden.`,
+        okLabel: "Cerrar igual"
+      }
+    : {
+        title: "¿Cerrar sesión?",
+        text: "Vas a salir de tu cuenta en este dispositivo. Tu progreso queda guardado.",
+        okLabel: "Cerrar sesión"
+      });
+  if (!ok) return;
   try { await logOut(); } catch {}
   // lo guardado en el dispositivo era de esta cuenta
   ["pomo.name", "pomo.pending", "pomo.localDays", "pomo.localChapters"].forEach((k) => store.set(k, k === "pomo.name" ? "" : k === "pomo.pending" ? [] : {}));

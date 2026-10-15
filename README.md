@@ -24,6 +24,7 @@ y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y 
 | `tools/make-icons.mjs` | Regenera los íconos si cambia el dibujo. |
 | `docs/FIREBASE.md` | Guía paso a paso para crear el proyecto gratis en Firebase. |
 | `docs/ANDROID.md` | Firma del APK, instalación en el celular y cómo compartirlo. |
+| `CLAUDE.md` | Reglas para las sesiones de Claude: autoría de los commits (KratosNub777) y commits chicos. |
 
 ## Links
 
