@@ -147,6 +147,16 @@ Sin mandar correos ni tocar tu proyecto real: en tres terminales, `npm run emula
 
 ---
 
+## 7. Seguridad: dejar el proyecto blindado (10 minutos)
+
+La `apiKey` de `src/firebase-config.js` es pública por diseño, pero conviene limitarla para que nadie más la use. Son pasos de consola, no se pueden hacer desde el repo.
+
+1. **Restringir la clave.** https://console.cloud.google.com/apis/credentials (elegí el proyecto `stwr-ascend`) → la clave "Browser key" → **Restricciones de la aplicación**: *Sitios web* y agregá `https://kratosnub777.github.io/*`, `https://localhost/*` (app Android) y `http://localhost/*`. En **Restricciones de la API** elegí *Restringir clave* y dejá solo **Identity Toolkit API**, **Token Service API** y **Cloud Firestore API**.
+2. **Verificar las reglas publicadas.** Firestore Database → **Reglas**: tiene que ser idéntico a `firestore.rules`. Si dice `allow read, write: if true` o tiene una fecha de vencimiento, pegá el contenido del archivo y **Publicar**.
+3. **Dominios autorizados.** Authentication → Configuración → Dominios autorizados: solo `kratosnub777.github.io` y `localhost`.
+4. **Alerta de GitHub.** Security → Secret scanning → la alerta de Google API Key → **Close as** → *Used in tests* o *Won't fix* (la clave es pública a propósito y ya está restringida).
+5. **Límite del servidor de recuperación (opcional, recomendado).** En Cloudflare → tu dominio o Workers → Security → WAF → Rate limiting rules: una regla para la ruta del Worker con un máximo de 20 pedidos por minuto por IP. Además, el Worker ya limita por IP (5 pedidos de código y 15 intentos cada 10 minutos) y a 250 correos por día en total.
+
 ## ¿Cómo sé que funcionó?
 
 Abrí la web publicada, escribí tu nombre y volvé a **Firestore Database → Datos**. Tiene que aparecer la colección `players` con un documento a tu nombre.
