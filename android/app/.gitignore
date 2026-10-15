@@ -1,2 +1,7 @@
 /build/*
 !/build/.npmkeep
+
+# Claves de firma: nunca van al repo (se cargan como secretos de GitHub)
+*.p12
+*.jks
+*.keystore
