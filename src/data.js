@@ -5,14 +5,13 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth, connectAuthEmulator, EmailAuthProvider, linkWithCredential,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
-  verifyPasswordResetCode, confirmPasswordReset, signOut
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
 } from "firebase/auth";
 import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
   connectFirestoreEmulator, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, serverTimestamp
 } from "firebase/firestore";
-import { firebaseConfig } from "./firebase-config.js";
+import { firebaseConfig, RESET_API_URL } from "./firebase-config.js";
 
 const USE_EMULATOR = import.meta.env.VITE_USE_EMULATOR === "1";
 
@@ -71,22 +70,30 @@ export async function logIn(email, password) {
   return uid;
 }
 
-/** Manda el correo con el código para cambiar la contraseña. */
-export function resetPassword(email) {
-  init();
-  return sendPasswordResetEmail(auth, email);
+// Servidor del código de recuperación (Worker de Cloudflare). En las pruebas con emuladores se usa el local.
+const resetUrl = () =>
+  USE_EMULATOR ? `http://${import.meta.env.VITE_EMULATOR_HOST || "127.0.0.1"}:8787` : RESET_API_URL;
+
+/** POST al Worker. Si falla, lanza un Error cuyo message es el motivo corto ("invalid-code", "too-soon", "network"…). */
+async function resetCall(path, body) {
+  if (resetUrl().includes("PEGAR_AQUI")) throw new Error("not-configured");
+  let res;
+  try {
+    res = await fetch(resetUrl() + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  } catch { throw new Error("network"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "unknown");
+  return data;
 }
 
-/** Comprueba el código del correo y devuelve el correo de la cuenta. Falla si venció o ya se usó. */
-export function checkResetCode(code) {
-  init();
-  return verifyPasswordResetCode(auth, code);
+/** Pide el código de 6 dígitos por correo. Responde igual exista o no la cuenta. */
+export function requestResetCode(email) {
+  return resetCall("/send", { email });
 }
 
-/** Pone la contraseña nueva usando el código del correo. */
-export function setNewPassword(code, password) {
-  init();
-  return confirmPasswordReset(auth, code, password);
+/** Cambia la contraseña con el código que llegó por correo. */
+export function confirmReset(email, code, password) {
+  return resetCall("/confirm", { email, code, password });
 }
 
 export function logOut() {
