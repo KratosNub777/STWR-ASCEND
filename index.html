@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script type="module" crossorigin src="./assets/index-D4l_ertw.js"></script>
+  <script type="module" crossorigin src="./assets/index-Crr2Puo3.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-BurG8JrV.css">
 </head>
 <body>
@@ -54,6 +54,30 @@
     <div class="gate-err" id="authErr" role="alert"></div>
     <button class="btn btn-primary" type="submit" id="authBtn">Crear cuenta</button>
     <button class="link-btn auth-forgot" type="button" id="authForgot" hidden>Olvidé mi contraseña</button>
+  </form>
+</div>
+
+<div class="gate" id="reset" hidden>
+  <form class="gate-card auth-card" id="resetForm" novalidate>
+    <div class="brand-mark" aria-hidden="true"></div>
+    <h2 id="resetTitle">Recuperá tu contraseña</h2>
+    <p id="resetText">Escribí el correo de tu cuenta y te mandamos un código para elegir una contraseña nueva.</p>
+    <div class="field" id="resetEmailField">
+      <label for="resetEmail">Correo</label>
+      <input id="resetEmail" name="resetEmail" type="email" placeholder="tu@correo.com" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field" id="resetCodeField" hidden>
+      <label for="resetCode">Código del correo</label>
+      <input id="resetCode" name="resetCode" placeholder="Pegá el código o el enlace" autocomplete="one-time-code" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="field" id="resetPassField" hidden>
+      <label for="resetPass">Contraseña nueva</label>
+      <input id="resetPass" name="resetPass" type="password" placeholder="Al menos 6 caracteres" autocomplete="new-password">
+    </div>
+    <div class="gate-err" id="resetErr" role="alert"></div>
+    <button class="btn btn-primary" type="submit" id="resetSubmit">Mandar código</button>
+    <button class="link-btn" type="button" id="resetResend" hidden>No me llegó: mandar de nuevo</button>
+    <button class="link-btn" type="button" id="resetBack">Volver a iniciar sesión</button>
   </form>
 </div>
 
