@@ -917,6 +917,21 @@ function renderReset() {
   $("resetSubmit").textContent = first ? "Mandar código" : "Cambiar contraseña";
 }
 
+$("authForgot").addEventListener("click", () => openReset("email", $("authEmail").value.trim()));
+$("resetBack").addEventListener("click", () => {
+  const email = $("resetEmail").value.trim();
+  $("reset").hidden = true;
+  openAuth("login");
+  if (email) $("authEmail").value = email;
+});
+$("resetResend").addEventListener("click", async () => {
+  const email = $("resetEmail").value.trim();
+  if (!email || resetBusy) return;
+  resetBusy = true;
+  try { await resetPassword(email); resetErr("Listo, te mandamos otro código.", true); }
+  catch (e) { resetErr(authError(e)); }
+  finally { resetBusy = false; }
+});
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
