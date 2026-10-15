@@ -354,6 +354,21 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 .confirm::backdrop { background: rgba(8, 7, 14, .72); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 .confirm[open] { animation: confirm-in .22s cubic-bezier(.2, .8, .2, 1); }
 .confirm[open]::backdrop { animation: confirm-fade .22s ease; }
+.confirm-card {
+  display: grid; justify-items: center; gap: 10px; text-align: center; margin: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 26px 22px 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, .55), 0 0 0 1px rgba(156, 157, 255, .04);
+}
+.confirm-icon {
+  width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; margin-bottom: 4px;
+  background: rgba(255, 138, 138, .14); color: var(--danger);
+}
+.confirm-icon svg { width: 24px; height: 24px; }
+.confirm-icon.warn { background: var(--gold-soft); color: var(--gold); }
+.confirm-card h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.35rem; line-height: 1.15; letter-spacing: -.01em; margin: 0; text-wrap: balance; }
+.confirm-card p { color: var(--muted); margin: 0; text-wrap: pretty; }
+.confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 12px; }
+.confirm-actions .btn { min-width: 0; padding: 13px 12px; }
 
 /* Aviso de versión nueva (app Android) */
 .update-bar {
