@@ -107,28 +107,49 @@ check("correo repetido avisa", (await c.$eval("#authErr", (x) => x.textContent))
 const docs = await admin((db) => getDocs(collection(db, "players")));
 check("en la base sigue habiendo un solo jugador", docs.size === 1);
 
-// 5) Recuperar contraseña: pantalla propia, llega el código y con él se cambia
+// 5) Recuperar contraseña: pantalla propia, llega un código de 6 dígitos y con él se cambia.
+// Hace falta el Worker en local: cd worker && npx wrangler dev --port 8787 --var DEV:1 \
+//   --var FIREBASE_AUTH_EMULATOR:http://127.0.0.1:9099 --var FIREBASE_PROJECT:demo-stwr
+// Con DEV:1 el Worker no manda correo: devuelve el código en la respuesta de /send, y acá se lee de ahí.
+const RESET_API = process.env.RESET_API || "http://127.0.0.1:8787";
+// se espera a que aparezca el mensaje en vez de dormir un tiempo fijo
+const resetMsg = async (page, re) => {
+  try { await page.waitForFunction((src) => new RegExp(src).test(document.querySelector("#resetErr").textContent), re.source, { timeout: 10000 }); } catch {}
+  return page.$eval("#resetErr", (x) => x.textContent);
+};
 const f = await open();
 await sleep(2500);
 await f.click("#authTabLogin");
 await f.fill("#authEmail", "lucas@prueba.com");
+let code = null;
+f.on("response", async (r) => { if (r.url().endsWith("/send")) { try { code = (await r.json()).debugCode || code; } catch {} } });
 await f.click("#authForgot");
 check("abre una pantalla aparte para recuperar", (await f.$eval("#reset", (x) => !x.hidden)) && (await f.$eval("#auth", (x) => x.hidden)));
 check("con el correo ya puesto", (await f.$eval("#resetEmail", (x) => x.value)) === "lucas@prueba.com");
 await f.click("#resetSubmit");
-await sleep(2000);
+await sleep(3000);
 check("pasa al paso del código", await f.$eval("#resetCodeField", (x) => !x.hidden));
-const oob = await (await fetch("http://127.0.0.1:9099/emulator/v1/projects/demo-stwr/oobCodes")).json();
-const mail = oob.oobCodes.filter((o) => o.email === "lucas@prueba.com" && o.requestType === "PASSWORD_RESET").pop();
-check("el código salió por correo", !!mail);
-await f.fill("#resetCode", "codigo-falso");
+check("se generó un código de 6 dígitos", /^\d{6}$/.test(code || ""), String(code));
 await f.fill("#resetPass", "nueva-clave-1");
+await f.fill("#resetCode", "12345");
 await f.click("#resetSubmit");
-await sleep(1500);
-check("un código falso avisa", (await f.$eval("#resetErr", (x) => x.textContent)).includes("código"));
-await f.fill("#resetCode", mail.oobLink); // vale pegar el enlace entero
+await sleep(500);
+check("un código corto avisa sin llamar al servidor", (await f.$eval("#resetErr", (x) => x.textContent)).includes("6 dígitos"));
+await f.fill("#resetCode", code === "000000" ? "111111" : "000000");
 await f.click("#resetSubmit");
-await sleep(2500);
+{ const m = await resetMsg(f, /no es correcto/); check("un código incorrecto avisa", m.includes("no es correcto"), JSON.stringify(m)); }
+await f.click("#resetResend");
+{ const m = await resetMsg(f, /Esperá/); check("no deja pedir otro código enseguida", m.includes("Esperá"), JSON.stringify(m)); }
+check("sin cambiar la contraseña todavía", await (async () => {
+  const r = await fetch("http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=fake", {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: "lucas@prueba.com", password: "secreta123", returnSecureToken: true })
+  });
+  return r.ok;
+})());
+await f.fill("#resetCode", code);
+await f.click("#resetSubmit");
+await sleep(3000);
 check("vuelve al inicio de sesión con el correo", (await f.$eval("#auth", (x) => !x.hidden)) && (await f.$eval("#authEmail", (x) => x.value)) === "lucas@prueba.com");
 await f.fill("#authPass", "secreta123");
 await f.click("#authBtn");
@@ -138,6 +159,11 @@ await f.fill("#authPass", "nueva-clave-1");
 await f.click("#authBtn");
 await sleep(3000);
 check("entra con la contraseña nueva", await f.$eval("#auth", (x) => x.hidden));
+const again = await fetch(`${RESET_API}/confirm`, {
+  method: "POST", headers: { "content-type": "application/json" },
+  body: JSON.stringify({ email: "lucas@prueba.com", code, password: "otra-clave-9" })
+});
+check("el código sirve una sola vez", again.status === 403);
 
 console.log("errores:", errors);
 const ok = checks.every(Boolean) && errors.length === 0;

@@ -2,7 +2,7 @@
 import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
-  isConfigured, currentAccount, register, logIn, resetPassword, checkResetCode, setNewPassword, logOut, watchPlayers, loadMine, createMine, updateMine
+  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine
 } from "./data.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
@@ -827,13 +827,28 @@ const AUTH_ERRORS = {
   "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
   "auth/wrong-password": "Correo o contraseña incorrectos.",
   "auth/user-not-found": "Correo o contraseña incorrectos.",
-  "auth/invalid-action-code": "El código no es válido o ya se usó. Pedí uno nuevo.",
-  "auth/expired-action-code": "El código venció. Pedí uno nuevo.",
   "auth/too-many-requests": "Demasiados intentos. Esperá un rato y probá de nuevo.",
   "auth/network-request-failed": "Sin conexión. Para entrar necesitás internet.",
   "auth/operation-not-allowed": "Falta activar el inicio con correo y contraseña en Firebase."
 };
 const authError = (e) => AUTH_ERRORS[e && e.code] || "No se pudo. Probá de nuevo.";
+// errores de la recuperación: el servidor devuelve un motivo corto, que llega en e.message
+const RESET_ERRORS = {
+  "invalid-email": "Ese correo no es válido.",
+  "too-soon": "Ya te mandamos un código hace un momento. Esperá un minuto para pedir otro.",
+  "invalid-code": "El código no es correcto. Revisalo o pedí uno nuevo.",
+  "expired-code": "El código venció. Pedí uno nuevo.",
+  "weak-password": "La contraseña tiene que tener al menos 6 caracteres.",
+  "mail-failed": "No pudimos mandar el correo. Probá de nuevo en un rato.",
+  "update-failed": "No se pudo cambiar la contraseña. Probá de nuevo.",
+  "lookup-failed": "No se pudo. Probá de nuevo en un rato.",
+  "not-configured": "Falta conectar el servidor del código (ver docs/FIREBASE.md, sección 6)."
+};
+const resetError = (e) => {
+  const reason = String((e && e.message) || "");
+  if (reason === "network") return AUTH_ERRORS["auth/network-request-failed"];
+  return RESET_ERRORS[reason] || "No se pudo. Probá de nuevo.";
+};
 
 function openAuth(mode) {
   authMode = mode;
@@ -882,24 +897,17 @@ let resetStep = "email";
 let resetBusy = false;
 const resetErr = (msg, ok) => { $("resetErr").className = ok ? "gate-err ok" : "gate-err"; $("resetErr").textContent = msg; };
 
-// el correo trae un enlace con el código (oobCode=...): sirve pegar el enlace entero o solo el código
-function extractCode(raw) {
-  const s = String(raw || "").trim();
-  const m = s.match(/[?&#]oobCode=([^&#\s]+)/);
-  return m ? decodeURIComponent(m[1]) : s;
-}
-
-function openReset(step, email, code) {
+function openReset(step, email) {
   resetStep = step;
   resetErr("");
   $("auth").hidden = true;
   $("gate").hidden = true;
   $("reset").hidden = false;
   $("resetEmail").value = email || "";
-  $("resetCode").value = code || "";
+  $("resetCode").value = "";
   $("resetPass").value = "";
   renderReset();
-  setTimeout(() => { try { $(step === "email" ? "resetEmail" : code ? "resetPass" : "resetCode").focus(); } catch {} }, 50);
+  setTimeout(() => { try { $(step === "email" ? "resetEmail" : "resetCode").focus(); } catch {} }, 50);
 }
 function renderReset() {
   const first = resetStep === "email";
@@ -908,8 +916,8 @@ function renderReset() {
   $("resetText").textContent = first
     ? "Escribí el correo de tu cuenta y te mandamos un código para elegir una contraseña nueva."
     : (email
-      ? `Si ${email} tiene cuenta, te mandamos un código. Pegalo acá (si te llegó un enlace, pegá el enlace entero). Mirá también en spam.`
-      : "Pegá el código que te llegó por correo (si te llegó un enlace, pegá el enlace entero) y elegí tu contraseña nueva.");
+      ? `Si ${email} tiene cuenta, te mandamos un código de 6 dígitos. Escribilo acá y elegí tu contraseña nueva. Mirá también en spam.`
+      : "Escribí el código de 6 dígitos que te llegó por correo y elegí tu contraseña nueva.");
   $("resetEmailField").hidden = !first;
   $("resetCodeField").hidden = first;
   $("resetPassField").hidden = first;
@@ -928,8 +936,8 @@ $("resetResend").addEventListener("click", async () => {
   const email = $("resetEmail").value.trim();
   if (!email || resetBusy) return;
   resetBusy = true;
-  try { await resetPassword(email); resetErr("Listo, te mandamos otro código.", true); }
-  catch (e) { resetErr(authError(e)); }
+  try { await requestResetCode(email); resetErr("Listo, te mandamos otro código.", true); }
+  catch (e) { resetErr(resetError(e)); }
   finally { resetBusy = false; }
 });
 $("resetForm").addEventListener("submit", async (e) => {
@@ -942,47 +950,32 @@ $("resetForm").addEventListener("submit", async (e) => {
     if (!email) { resetErr(AUTH_ERRORS["auth/missing-email"]); return; }
     resetBusy = true; btn.disabled = true; btn.textContent = "Mandando…";
     try {
-      await resetPassword(email);
+      await requestResetCode(email);
       resetStep = "code";
       renderReset();
       resetErr("Código enviado. Puede tardar un minuto en llegar.", true);
       try { $("resetCode").focus(); } catch {}
-    } catch (e2) { resetErr(authError(e2)); }
+    } catch (e2) { resetErr(resetError(e2)); }
     finally { resetBusy = false; btn.disabled = false; if (resetStep === "email") btn.textContent = label; }
     return;
   }
-  const code = extractCode($("resetCode").value);
+  const email = $("resetEmail").value.trim();
+  const code = $("resetCode").value.replace(/\D/g, "");
   const pass = $("resetPass").value;
-  if (!code) { resetErr("Pegá el código que te llegó por correo."); return; }
+  if (code.length !== 6) { resetErr("Escribí el código de 6 dígitos que te llegó por correo."); return; }
   if (!pass) { resetErr(AUTH_ERRORS["auth/missing-password"]); return; }
   resetBusy = true; btn.disabled = true; btn.textContent = "Cambiando…";
   try {
-    const email = await checkResetCode(code);
-    await setNewPassword(code, pass);
+    await confirmReset(email, code, pass);
     $("reset").hidden = true;
     openAuth("login");
     $("authEmail").value = email;
     $("authErr").className = "gate-err ok";
     $("authErr").textContent = "Listo, cambiaste tu contraseña. Entrá con la nueva.";
     setTimeout(() => { try { $("authPass").focus(); } catch {} }, 60);
-  } catch (e2) { resetErr(authError(e2)); }
+  } catch (e2) { resetErr(resetError(e2)); }
   finally { resetBusy = false; btn.disabled = false; btn.textContent = label; }
 });
-
-// el enlace del correo puede abrir la app con el código ya puesto
-async function openResetFromLink() {
-  const q = new URLSearchParams(location.search);
-  const code = q.get("oobCode");
-  if (q.get("mode") !== "resetPassword" || !code) return false;
-  history.replaceState(null, "", location.pathname);
-  openReset("code", "", code);
-  try {
-    const email = await checkResetCode(code);
-    $("resetEmail").value = email;
-    renderReset();
-  } catch (e) { resetErr(authError(e)); }
-  return true;
-}
 
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1049,7 +1042,6 @@ export function startApp() {
   renderBoard();
   // sin Firebase configurado no hay cuentas: alcanza con el nombre
   if (!myName && !isConfigured()) openGate("");
-  if (isConfigured()) openResetFromLink();
   connect();
   checkForUpdate();
 }

@@ -1,0 +1,21 @@
+# Servidor del código de 6 dígitos para recuperar la contraseña (Cloudflare Workers, plan gratis).
+# Guía paso a paso: docs/FIREBASE.md, sección 6.
+name = "stwr-reset"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# Correo remitente: tiene que ser el que verificaste en Brevo.
+MAIL_FROM = "CAMBIAR@ejemplo.com"
+MAIL_FROM_NAME = "STWR-ASCEND"
+
+# Cada correo tiene su propio contador de intentos; así dos pedidos a la vez no se saltean el límite.
+[[durable_objects.bindings]]
+name = "RESET"
+class_name = "ResetCode"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ResetCode"]
+
+# Secretos (no van acá): BREVO_API_KEY y FIREBASE_SERVICE_ACCOUNT, con `npx wrangler secret put`.

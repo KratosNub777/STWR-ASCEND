@@ -65,8 +65,8 @@
       <input id="resetEmail" name="resetEmail" type="email" placeholder="tu@correo.com" autocomplete="email" inputmode="email">
     </div>
     <div class="field" id="resetCodeField" hidden>
-      <label for="resetCode">Código del correo</label>
-      <input id="resetCode" name="resetCode" placeholder="Pegá el código o el enlace" autocomplete="one-time-code" autocapitalize="off" spellcheck="false">
+      <label for="resetCode">Código de 6 dígitos</label>
+      <input id="resetCode" name="resetCode" placeholder="6 dígitos" maxlength="6" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" spellcheck="false">
     </div>
     <div class="field" id="resetPassField" hidden>
       <label for="resetPass">Contraseña nueva</label>
