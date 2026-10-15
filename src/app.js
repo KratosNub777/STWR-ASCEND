@@ -764,7 +764,7 @@ async function connect() {
   else {
     // sin cuenta, o con la anónima de antes: hay que registrarse (la anónima se convierte y conserva sus minutos)
     if (account) myId = account.uid;
-    if ($("auth").hidden) openAuth("register");
+    if ($("auth").hidden && $("reset").hidden) openAuth("register");
   }
 }
 
