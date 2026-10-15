@@ -897,13 +897,6 @@ let resetStep = "email";
 let resetBusy = false;
 const resetErr = (msg, ok) => { $("resetErr").className = ok ? "gate-err ok" : "gate-err"; $("resetErr").textContent = msg; };
 
-// el correo trae un enlace con el código (oobCode=...): sirve pegar el enlace entero o solo el código
-function extractCode(raw) {
-  const s = String(raw || "").trim();
-  const m = s.match(/[?&#]oobCode=([^&#\s]+)/);
-  return m ? decodeURIComponent(m[1]) : s;
-}
-
 function openReset(step, email, code) {
   resetStep = step;
   resetErr("");
@@ -984,21 +977,6 @@ $("resetForm").addEventListener("submit", async (e) => {
   finally { resetBusy = false; btn.disabled = false; btn.textContent = label; }
 });
 
-// el enlace del correo puede abrir la app con el código ya puesto
-async function openResetFromLink() {
-  const q = new URLSearchParams(location.search);
-  const code = q.get("oobCode");
-  if (q.get("mode") !== "resetPassword" || !code) return false;
-  history.replaceState(null, "", location.pathname);
-  openReset("code", "", code);
-  try {
-    const email = await checkResetCode(code);
-    $("resetEmail").value = email;
-    renderReset();
-  } catch (e) { resetErr(authError(e)); }
-  return true;
-}
-
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
@@ -1064,7 +1042,6 @@ export function startApp() {
   renderBoard();
   // sin Firebase configurado no hay cuentas: alcanza con el nombre
   if (!myName && !isConfigured()) openGate("");
-  if (isConfigured()) openResetFromLink();
   connect();
   checkForUpdate();
 }
