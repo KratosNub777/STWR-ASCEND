@@ -77,6 +77,18 @@ export function resetPassword(email) {
   return sendPasswordResetEmail(auth, email);
 }
 
+/** Comprueba el código del correo y devuelve el correo de la cuenta. Falla si venció o ya se usó. */
+export function checkResetCode(code) {
+  init();
+  return verifyPasswordResetCode(auth, code);
+}
+
+/** Pone la contraseña nueva usando el código del correo. */
+export function setNewPassword(code, password) {
+  init();
+  return confirmPasswordReset(auth, code, password);
+}
+
 export function logOut() {
   init();
   return signOut(auth);
