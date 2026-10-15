@@ -84,3 +84,68 @@ async function findUid(env, email) {
   const data = await identity(env, "lookup", { email: [email] });
   return data.users && data.users[0] ? data.users[0].localId : null;
 }
+
+// ---------- Correo (Brevo) ----------
+async function sendMail(env, to, code) {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": env.BREVO_API_KEY, "content-type": "application/json", accept: "application/json" },
+    body: JSON.stringify({
+      sender: { email: env.MAIL_FROM, name: env.MAIL_FROM_NAME || "STWR-ASCEND" },
+      to: [{ email: to }],
+      subject: `Tu código para cambiar la contraseña: ${code}`,
+      textContent: `Tu código es ${code}.\n\nEscribilo en la app para elegir una contraseña nueva. Vale 10 minutos.\nSi no lo pediste vos, ignorá este correo.`,
+      htmlContent: `<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto">
+        <h2>Cambiá tu contraseña</h2>
+        <p>Escribí este código en la app:</p>
+        <p style="font-size:34px;font-weight:700;letter-spacing:8px;margin:18px 0">${code}</p>
+        <p style="color:#666">Vale 10 minutos. Si no lo pediste vos, ignorá este correo.</p></div>`
+    })
+  });
+  if (!res.ok) throw new Error(`brevo ${res.status}: ${(await res.text()).slice(0, 200)}`);
+}
+
+// ---------- Durable Object: el código de un correo ----------
+// Un objeto atiende de a un pedido por vez, así que el contador de intentos no se puede saltear con pedidos en paralelo.
+export class ResetCode {
+  constructor(state) { this.state = state; }
+
+  async fetch(req) {
+    const url = new URL(req.url);
+    const body = await req.json().catch(() => ({}));
+    const st = this.state.storage;
+
+    if (url.pathname === "/issue") {
+      const prev = await st.get("rec");
+      if (prev && Date.now() - prev.sentAt < RESEND_MS) return Response.json({ error: "too-soon" }, { status: 429 });
+      const code = newCode();
+      await st.put("rec", {
+        hash: await sha(`${body.email}:${code}`), attempts: 0,
+        sentAt: Date.now(), expiresAt: Date.now() + CODE_TTL_MS
+      });
+      await st.setAlarm(Date.now() + CODE_TTL_MS + 60e3);   // limpieza
+      return Response.json({ code });
+    }
+
+    if (url.pathname === "/clear") { await st.deleteAll(); return Response.json({ ok: true }); }
+
+    if (url.pathname === "/check") {
+      const rec = await st.get("rec");
+      if (!rec) return Response.json({ verdict: "invalid" });
+      if (rec.expiresAt < Date.now()) { await st.deleteAll(); return Response.json({ verdict: "expired" }); }
+      if (rec.attempts >= MAX_ATTEMPTS) { await st.deleteAll(); return Response.json({ verdict: "invalid" }); }
+      if (!same(rec.hash, await sha(`${body.email}:${body.code}`))) {
+        await st.put("rec", { ...rec, attempts: rec.attempts + 1 });
+        return Response.json({ verdict: "invalid" });
+      }
+      await st.deleteAll();        // un código sirve una sola vez
+      return Response.json({ verdict: "ok" });
+    }
+    return new Response("not found", { status: 404 });
+  }
+
+  async alarm() { await this.state.storage.deleteAll(); }
+}
+
+const box = async (env, email) => env.RESET.get(env.RESET.idFromName(await sha(email)));
+const call = (stub, path, body) => stub.fetch(`https://reset${path}`, { method: "POST", body: JSON.stringify(body) });
