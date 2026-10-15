@@ -107,6 +107,38 @@ check("correo repetido avisa", (await c.$eval("#authErr", (x) => x.textContent))
 const docs = await admin((db) => getDocs(collection(db, "players")));
 check("en la base sigue habiendo un solo jugador", docs.size === 1);
 
+// 5) Recuperar contraseña: pantalla propia, llega el código y con él se cambia
+const f = await open();
+await sleep(2500);
+await f.click("#authTabLogin");
+await f.fill("#authEmail", "lucas@prueba.com");
+await f.click("#authForgot");
+check("abre una pantalla aparte para recuperar", (await f.$eval("#reset", (x) => !x.hidden)) && (await f.$eval("#auth", (x) => x.hidden)));
+check("con el correo ya puesto", (await f.$eval("#resetEmail", (x) => x.value)) === "lucas@prueba.com");
+await f.click("#resetSubmit");
+await sleep(2000);
+check("pasa al paso del código", await f.$eval("#resetCodeField", (x) => !x.hidden));
+const oob = await (await fetch("http://127.0.0.1:9099/emulator/v1/projects/demo-stwr/oobCodes")).json();
+const mail = oob.oobCodes.filter((o) => o.email === "lucas@prueba.com" && o.requestType === "PASSWORD_RESET").pop();
+check("el código salió por correo", !!mail);
+await f.fill("#resetCode", "codigo-falso");
+await f.fill("#resetPass", "nueva-clave-1");
+await f.click("#resetSubmit");
+await sleep(1500);
+check("un código falso avisa", (await f.$eval("#resetErr", (x) => x.textContent)).includes("código"));
+await f.fill("#resetCode", mail.oobLink); // vale pegar el enlace entero
+await f.click("#resetSubmit");
+await sleep(2500);
+check("vuelve al inicio de sesión con el correo", (await f.$eval("#auth", (x) => !x.hidden)) && (await f.$eval("#authEmail", (x) => x.value)) === "lucas@prueba.com");
+await f.fill("#authPass", "secreta123");
+await f.click("#authBtn");
+await sleep(1500);
+check("la contraseña vieja ya no sirve", (await f.$eval("#authErr", (x) => x.textContent)).includes("incorrectos"));
+await f.fill("#authPass", "nueva-clave-1");
+await f.click("#authBtn");
+await sleep(3000);
+check("entra con la contraseña nueva", await f.$eval("#auth", (x) => x.hidden));
+
 console.log("errores:", errors);
 const ok = checks.every(Boolean) && errors.length === 0;
 console.log(ok ? "OK" : "FALLÓ");
