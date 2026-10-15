@@ -1,5 +1,6 @@
 // Ranking mensual: suma solo los días del mes en curso y muestra al ganador del mes pasado.
 import { chromium } from "playwright";
+import { captureCodes, registerAndVerify } from "./helpers.mjs";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { readFileSync } from "node:fs";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
@@ -32,13 +33,10 @@ const browser = await chromium.launch(process.env.CHROME ? { executablePath: pro
 const errors = [];
 const page = await (await browser.newContext()).newPage();
 page.on("pageerror", (e) => errors.push(e.message));
+captureCodes(page);
 await page.goto(URL);
 await sleep(3000);
-await page.fill("#authName", "Carla");
-await page.fill("#authEmail", "carla@prueba.com");
-await page.fill("#authPass", "secreta123");
-await page.click("#authBtn");
-await sleep(3000);
+await registerAndVerify(page, "Carla", "carla@prueba.com", "secreta123");
 await page.click("#tabMonth");
 const title = await page.$eval("#boardTitle", (x) => x.textContent);
 check("título con el nombre del mes", title.startsWith("Ranking de ") && title !== "Ranking de la semana", title);
