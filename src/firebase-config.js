@@ -17,3 +17,7 @@ export const firebaseConfig = {
   messagingSenderId: "699592526388",
   appId: "1:699592526388:web:559c392811ca9f10c29861"
 };
+
+// Dirección del servidor que manda el código de 6 dígitos para recuperar la contraseña
+// (el Worker de la carpeta worker/). Se obtiene al publicarlo: ver docs/FIREBASE.md, sección 6.
+export const RESET_API_URL = "https://stwr-reset.PEGAR_AQUI.workers.dev";
