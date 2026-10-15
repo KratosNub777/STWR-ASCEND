@@ -827,6 +827,8 @@ const AUTH_ERRORS = {
   "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
   "auth/wrong-password": "Correo o contraseña incorrectos.",
   "auth/user-not-found": "Correo o contraseña incorrectos.",
+  "auth/invalid-action-code": "El código no es válido o ya se usó. Pedí uno nuevo.",
+  "auth/expired-action-code": "El código venció. Pedí uno nuevo.",
   "auth/too-many-requests": "Demasiados intentos. Esperá un rato y probá de nuevo.",
   "auth/network-request-failed": "Sin conexión. Para entrar necesitás internet.",
   "auth/operation-not-allowed": "Falta activar el inicio con correo y contraseña en Firebase."
