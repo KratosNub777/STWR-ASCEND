@@ -876,16 +876,18 @@ function renderAuth() {
 $("authTabRegister").addEventListener("click", () => { if (authMode !== "register") openAuth("register"); });
 $("authTabLogin").addEventListener("click", () => { if (authMode !== "login") openAuth("login"); });
 
-$("authForgot").addEventListener("click", async () => {
-  const email = $("authEmail").value.trim();
-  const err = $("authErr");
-  if (!email) { err.className = "gate-err"; err.textContent = "Escribí tu correo y te mandamos un enlace para cambiar la contraseña."; return; }
-  try {
-    await resetPassword(email);
-    err.className = "gate-err ok";
-    err.textContent = "Si ese correo tiene cuenta, te llega un enlace para cambiar la contraseña.";
-  } catch (e) { err.className = "gate-err"; err.textContent = authError(e); }
-});
+// ---------- Recuperar contraseña (pantalla aparte del inicio de sesión) ----------
+// Paso 1: correo → mandamos el código. Paso 2: código del correo + contraseña nueva.
+let resetStep = "email";
+let resetBusy = false;
+const resetErr = (msg, ok) => { $("resetErr").className = ok ? "gate-err ok" : "gate-err"; $("resetErr").textContent = msg; };
+
+// el correo trae un enlace con el código (oobCode=...): sirve pegar el enlace entero o solo el código
+function extractCode(raw) {
+  const s = String(raw || "").trim();
+  const m = s.match(/[?&#]oobCode=([^&#\s]+)/);
+  return m ? decodeURIComponent(m[1]) : s;
+}
 
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
