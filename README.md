@@ -12,6 +12,7 @@ y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y 
 | `src/app.js` | Reloj, capítulos, tiempos, ranking, racha y avisos. |
 | `src/data.js` | Conexión con Firebase (cuentas con correo y contraseña, y Firestore). |
 | `src/firebase-config.js` | **Las claves de tu proyecto de Firebase: el único archivo que tenés que completar.** |
+| `src/profile.js` | Resumen e historial de estudio del perfil. |
 | `src/util.js`, `src/sound.js` | Fechas, almacenamiento del dispositivo, sonido y pantalla encendida. |
 | `firestore.rules` | Reglas de seguridad de la base de datos. |
 | `tests/` | Pruebas de las reglas y de la app con dos usuarios, usando el emulador de Firebase. |
