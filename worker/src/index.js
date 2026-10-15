@@ -7,6 +7,12 @@
 const CODE_TTL_MS = 10 * 60e3;
 const RESEND_MS = 60e3;
 const MAX_ATTEMPTS = 5;
+// Límites contra abuso (por IP y globales). Ventanas fijas guardadas en Durable Objects.
+const LIMITS = {
+  sendIp:      { max: 5,   windowMs: 10 * 60e3 },        // pedidos de código por IP
+  confirmIp:   { max: 15,  windowMs: 10 * 60e3 },        // intentos de cambio de contraseña por IP
+  sendGlobal:  { max: 250, windowMs: 24 * 3600e3 }       // por debajo de los 300 correos diarios gratis de Brevo
+};
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -118,6 +124,8 @@ export class ResetCode {
     if (url.pathname === "/issue") {
       const prev = await st.get("rec");
       if (prev && Date.now() - prev.sentAt < RESEND_MS) return Response.json({ error: "too-soon" }, { status: 429 });
+      // si se agotaron los intentos, no se puede pedir otro código hasta que venza el anterior
+      if (prev && prev.attempts >= MAX_ATTEMPTS && prev.expiresAt > Date.now()) return Response.json({ error: "too-soon" }, { status: 429 });
       const code = newCode();
       await st.put("rec", {
         hash: await sha(`${body.email}:${code}`), attempts: 0,
@@ -129,11 +137,24 @@ export class ResetCode {
 
     if (url.pathname === "/clear") { await st.deleteAll(); return Response.json({ ok: true }); }
 
+    // contador de ventana fija: { max, windowMs } → { allowed }
+    if (url.pathname === "/hit") {
+      const now = Date.now();
+      let w = await st.get("win");
+      if (!w || w.start + body.windowMs <= now) {
+        w = { start: now, count: 0 };
+        await st.setAlarm(now + body.windowMs + 60e3);   // limpieza
+      }
+      if (w.count >= body.max) return Response.json({ allowed: false });
+      await st.put("win", { ...w, count: w.count + 1 });
+      return Response.json({ allowed: true });
+    }
+
     if (url.pathname === "/check") {
       const rec = await st.get("rec");
       if (!rec) return Response.json({ verdict: "invalid" });
       if (rec.expiresAt < Date.now()) { await st.deleteAll(); return Response.json({ verdict: "expired" }); }
-      if (rec.attempts >= MAX_ATTEMPTS) { await st.deleteAll(); return Response.json({ verdict: "invalid" }); }
+      if (rec.attempts >= MAX_ATTEMPTS) return Response.json({ verdict: "invalid" });   // queda bloqueado hasta que venza
       if (!same(rec.hash, await sha(`${body.email}:${body.code}`))) {
         await st.put("rec", { ...rec, attempts: rec.attempts + 1 });
         return Response.json({ verdict: "invalid" });
@@ -151,18 +172,28 @@ const box = async (env, email) => env.RESET.get(env.RESET.idFromName(await sha(e
 const call = (stub, path, body) => stub.fetch(`https://reset${path}`, { method: "POST", body: JSON.stringify(body) });
 
 // ---------- Rutas ----------
-async function send(env, data) {
+/** Cuenta un pedido contra un límite. `name` identifica el contador (una IP, "global"…). */
+async function allow(env, name, limit) {
+  const stub = await box(env, `limit:${name}`);
+  const res = await call(stub, "/hit", limit);
+  return (await res.json()).allowed;
+}
+const clientIp = (req) => req.headers.get("cf-connecting-ip") || "unknown";
+
+async function send(env, data, ip) {
   const email = normEmail(data.email);
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail(400, "invalid-email");
-  // misma respuesta exista o no la cuenta: no sirve para averiguar quién está registrado
-  let uid;
-  try { uid = await findUid(env, email); } catch (e) { console.error(e.message); return fail(500, "lookup-failed"); }
-  if (!uid) return json({ ok: true });
+  if (!(await allow(env, `send:${ip}`, LIMITS.sendIp)) || !(await allow(env, "send:global", LIMITS.sendGlobal))) return fail(429, "too-soon");
 
+  // El enfriamiento de 1 minuto se aplica a cualquier correo, exista la cuenta o no:
+  // así ni la respuesta ni el error sirven para averiguar quién está registrado.
   const stub = await box(env, email);
   const issued = await call(stub, "/issue", { email });
   if (issued.status === 429) return fail(429, "too-soon");
   const { code } = await issued.json();
+  let uid;
+  try { uid = await findUid(env, email); } catch (e) { console.error(e.message); await call(stub, "/clear", {}); return fail(500, "lookup-failed"); }
+  if (!uid) return json({ ok: true });
   // solo en pruebas locales (wrangler dev --var DEV:1): no manda correo y devuelve el código
   if (env.DEV === "1") return json({ ok: true, debugCode: code });
   try { await sendMail(env, email, code); }
@@ -170,7 +201,8 @@ async function send(env, data) {
   return json({ ok: true });
 }
 
-async function confirm(env, data) {
+async function confirm(env, data, ip) {
+  if (!(await allow(env, `confirm:${ip}`, LIMITS.confirmIp))) return fail(429, "too-soon");
   const email = normEmail(data.email);
   const code = String(data.code || "").replace(/\s+/g, "");
   const password = String(data.password || "");
@@ -195,8 +227,8 @@ export default {
     const path = new URL(req.url).pathname;
     const data = await req.json().catch(() => null);
     if (!data || typeof data !== "object") return fail(400, "bad-request");
-    if (path === "/send") return send(env, data);
-    if (path === "/confirm") return confirm(env, data);
+    if (path === "/send") return send(env, data, clientIp(req));
+    if (path === "/confirm") return confirm(env, data, clientIp(req));
     return fail(404, "not-found");
   }
 };
