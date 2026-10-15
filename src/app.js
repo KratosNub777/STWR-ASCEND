@@ -1,5 +1,5 @@
 // STWR-ASCEND: reloj, capítulos, tiempos, ranking y racha.
-import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
+import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml, confirmDialog } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
   isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine
