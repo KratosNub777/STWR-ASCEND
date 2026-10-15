@@ -936,8 +936,8 @@ $("resetResend").addEventListener("click", async () => {
   const email = $("resetEmail").value.trim();
   if (!email || resetBusy) return;
   resetBusy = true;
-  try { await resetPassword(email); resetErr("Listo, te mandamos otro código.", true); }
-  catch (e) { resetErr(authError(e)); }
+  try { await requestResetCode(email); resetErr("Listo, te mandamos otro código.", true); }
+  catch (e) { resetErr(resetError(e)); }
   finally { resetBusy = false; }
 });
 $("resetForm").addEventListener("submit", async (e) => {
@@ -950,12 +950,12 @@ $("resetForm").addEventListener("submit", async (e) => {
     if (!email) { resetErr(AUTH_ERRORS["auth/missing-email"]); return; }
     resetBusy = true; btn.disabled = true; btn.textContent = "Mandando…";
     try {
-      await resetPassword(email);
+      await requestResetCode(email);
       resetStep = "code";
       renderReset();
       resetErr("Código enviado. Puede tardar un minuto en llegar.", true);
       try { $("resetCode").focus(); } catch {}
-    } catch (e2) { resetErr(authError(e2)); }
+    } catch (e2) { resetErr(resetError(e2)); }
     finally { resetBusy = false; btn.disabled = false; if (resetStep === "email") btn.textContent = label; }
     return;
   }
