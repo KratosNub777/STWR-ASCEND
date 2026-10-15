@@ -12,8 +12,8 @@
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <script type="module" crossorigin src="./assets/index-_e5StHBV.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BurG8JrV.css">
+  <script type="module" crossorigin src="./assets/index-_amRIN5b.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CZS_95Ty.css">
 </head>
 <body>
 <div class="gate" id="gate" hidden>
@@ -205,6 +205,18 @@
     </ul>
   </section>
 </main>
+
+<dialog class="confirm" id="confirmDlg" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+  <form method="dialog" class="confirm-card">
+    <span class="confirm-icon" id="confirmIcon" aria-hidden="true"></span>
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmText"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="confirmCancel" type="submit" value="cancel" autofocus>Cancelar</button>
+      <button class="btn btn-danger" id="confirmOk" type="submit" value="ok"></button>
+    </div>
+  </form>
+</dialog>
 
 <div class="toast-zone" id="toasts" aria-live="polite"></div>
 
