@@ -215,15 +215,14 @@ button { cursor: pointer; }
 
 /* Ranking */
 .board { display: grid; gap: 14px; }
-.board-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.board-head { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
 .board-head h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.35rem; margin: 0; text-wrap: balance; }
 .tabs { display: flex; background: var(--bg); padding: 4px; border-radius: 12px; gap: 4px; }
 .tabs button {
   border: 0; background: none; padding: 7px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); font-size: .9rem;
 }
 .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--fg); }
-.board-head .tabs button { padding: 7px 10px; }
-@media (min-width: 400px) { .board-head .tabs button { padding: 7px 12px; } }
+.board-head .tabs button { flex: 1 1 0; min-width: 0; padding: 8px 6px; white-space: nowrap; }
 .board-meta { color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .board-meta b { color: var(--fg); font-weight: 600; }
 .table-wrap { overflow-x: auto; margin: 0 -8px; }
@@ -446,3 +445,18 @@ tr.lead .avatar { box-shadow: 0 0 0 2px var(--gold); }
 
 .profile-danger { padding: 10px 0 16px; border-top: 1px solid var(--line); text-align: center; }
 .link-btn.danger { color: var(--danger); }
+
+/* Textos cortos de las pestañas: solo en celulares angostos */
+.board-head .tabs .short { display: none; }
+
+/* Celulares angostos: pestañas cortas sin pisarse, y fila del ranking más compacta */
+@media (max-width: 460px) {
+  .board-head .tabs button { font-size: .84rem; padding: 8px 2px; }
+  .board-head .tabs .long { display: none; }
+  .board-head .tabs .short { display: inline; }
+  th:last-child, td.sess { display: none; }
+  td { padding: 10px 6px; }
+  .name-row { gap: 8px; }
+  .name-line { gap: 5px; }
+  .tag { font-size: .64rem; padding: 2px 6px; }
+}

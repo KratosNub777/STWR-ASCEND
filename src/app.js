@@ -612,13 +612,15 @@ function renderBoard() {
     : "<strong>La semana arranca en cero</strong>Cuando alguien complete una sesión de estudio, aparece acá con sus minutos y sesiones.";
 
   // meta: participantes y reinicio (el lunes, o el día 1 en el ranking del mes)
-  const nextReset = view === "month" ? new Date(now.getFullYear(), now.getMonth() + 1, 1) : addDays(mondayOf(now), 7);
+  const nextReset = view === "month" ? new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    : view === "day" ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    : addDays(mondayOf(now), 7);
   const left = nextReset - now;
   const dd = Math.floor(left / 864e5), hh = Math.floor((left % 864e5) / 36e5);
   const people = list.length;
   $("boardMeta").innerHTML = `<span><b>${people}</b> ${people === 1 ? "participante" : "participantes"}</span>`
     + (view === "all" ? "<span>Suma todo lo estudiado, <b>nunca se reinicia</b></span>"
-      : `<span>Reinicio ${view === "month" ? "mensual" : "semanal"} en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
+      : `<span>Reinicio ${{ month: "mensual", day: "diario" }[view] || "semanal"} en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
 
   // ganador de la semana pasada (o del mes pasado, en el ranking del mes)
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
