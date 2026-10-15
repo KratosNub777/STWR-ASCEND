@@ -2,7 +2,7 @@
 import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
-  isConfigured, currentAccount, register, logIn, resetPassword, checkResetCode, setNewPassword, logOut, watchPlayers, loadMine, createMine, updateMine
+  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine
 } from "./data.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
@@ -827,13 +827,28 @@ const AUTH_ERRORS = {
   "auth/invalid-login-credentials": "Correo o contraseña incorrectos.",
   "auth/wrong-password": "Correo o contraseña incorrectos.",
   "auth/user-not-found": "Correo o contraseña incorrectos.",
-  "auth/invalid-action-code": "El código no es válido o ya se usó. Pedí uno nuevo.",
-  "auth/expired-action-code": "El código venció. Pedí uno nuevo.",
   "auth/too-many-requests": "Demasiados intentos. Esperá un rato y probá de nuevo.",
   "auth/network-request-failed": "Sin conexión. Para entrar necesitás internet.",
   "auth/operation-not-allowed": "Falta activar el inicio con correo y contraseña en Firebase."
 };
 const authError = (e) => AUTH_ERRORS[e && e.code] || "No se pudo. Probá de nuevo.";
+// errores de la recuperación: el servidor devuelve un motivo corto, que llega en e.message
+const RESET_ERRORS = {
+  "invalid-email": "Ese correo no es válido.",
+  "too-soon": "Ya te mandamos un código hace un momento. Esperá un minuto para pedir otro.",
+  "invalid-code": "El código no es correcto. Revisalo o pedí uno nuevo.",
+  "expired-code": "El código venció. Pedí uno nuevo.",
+  "weak-password": "La contraseña tiene que tener al menos 6 caracteres.",
+  "mail-failed": "No pudimos mandar el correo. Probá de nuevo en un rato.",
+  "update-failed": "No se pudo cambiar la contraseña. Probá de nuevo.",
+  "lookup-failed": "No se pudo. Probá de nuevo en un rato.",
+  "not-configured": "Falta conectar el servidor del código (ver docs/FIREBASE.md, sección 6)."
+};
+const resetError = (e) => {
+  const reason = String((e && e.message) || "");
+  if (reason === "network") return AUTH_ERRORS["auth/network-request-failed"];
+  return RESET_ERRORS[reason] || "No se pudo. Probá de nuevo.";
+};
 
 function openAuth(mode) {
   authMode = mode;
