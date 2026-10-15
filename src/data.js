@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
-  connectFirestoreEmulator, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, serverTimestamp
+  connectFirestoreEmulator, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteField, serverTimestamp
 } from "firebase/firestore";
 import { firebaseConfig, RESET_API_URL } from "./firebase-config.js";
 
@@ -135,4 +135,12 @@ export function createMine(name) {
 export function updateMine(patch, progress) {
   const extra = progress ? { lastAt: serverTimestamp() } : {};
   return updateDoc(myRef(), { ...patch, ...extra, updatedAt: serverTimestamp() });
+}
+
+/** Campo que borra un dato de mi documento (por ejemplo, quitar la foto de perfil). */
+export const removeField = () => deleteField();
+
+/** Correo de la cuenta con la sesión iniciada ("" si no hay). */
+export function accountEmail() {
+  return (auth && auth.currentUser && auth.currentUser.email) || "";
 }

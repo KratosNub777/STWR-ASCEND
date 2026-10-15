@@ -1,9 +1,10 @@
 // STWR-ASCEND: reloj, capítulos, tiempos, ranking y racha.
-import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml, confirmDialog } from "./util.js";
+import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml, confirmDialog, avatarHtml, resizePhoto } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
-  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine
+  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine, removeField, accountEmail
 } from "./data.js";
+import { summaryHtml, historyHtml, timeLabel } from "./profile.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
 const OPTIONS = {
@@ -403,7 +404,7 @@ async function ensureDoc() {
   return loadMine();
 }
 
-// nombre o capítulo actual: no suma minutos
+// nombre, foto o capítulo actual: no suma minutos (photo: texto de la foto, o null para quitarla)
 function writeProfile(fields) {
   if (!ready()) return;
   queue(async () => {
@@ -412,6 +413,8 @@ function writeProfile(fields) {
     const patch = {};
     if (fields.name && cur.name !== fields.name) patch.name = fields.name;
     if (validChap(fields.current) && cur.current !== fields.current) patch.current = fields.current;
+    if (typeof fields.photo === "string" && cur.photo !== fields.photo) patch.photo = fields.photo;
+    if (fields.photo === null && cur.photo) patch.photo = removeField();
     if (Object.keys(patch).length) await updateMine(patch, false);
   });
 }
@@ -467,7 +470,8 @@ function rebuild() {
     days: JSON.parse(JSON.stringify(data.days && typeof data.days === "object" ? data.days : {})),
     chapters: JSON.parse(JSON.stringify(data.chapters && typeof data.chapters === "object" ? data.chapters : {})),
     total: readTotal(data.total, data.days),
-    current: validChap(data.current) ? data.current : null
+    current: validChap(data.current) ? data.current : null,
+    photo: typeof data.photo === "string" && data.photo.startsWith("data:image/jpeg;base64,") ? data.photo : ""
   }));
   const me = players.find((p) => p.id === myId);
   if (me) {
@@ -530,8 +534,11 @@ function localDays() {
 }
 
 // ---------- Render del ranking ----------
+function myPlayer() { return players.find((p) => p.id === myId); }
 function renderMe() {
   $("meName").textContent = myName || "—";
+  const mine = myPlayer();
+  $("meAvatar").innerHTML = avatarHtml(myName, mine && mine.photo, "avatar-sm");
   const n = streakOf(localDays());
   const el = $("meStreak");
   el.classList.toggle("off", n === 0);
@@ -540,6 +547,7 @@ function renderMe() {
 
 function renderBoard() {
   renderMe();
+  renderProfile();
   const now = new Date();
   const keys = view === "day" ? [dayKey(now)] : view === "all" ? "all" : weekKeys(mondayOf(now));
   const list = rankList(keys);
@@ -573,7 +581,11 @@ function renderBoard() {
     if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
     if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
     if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
-    tdName.append(line);
+    const row = document.createElement("div");
+    row.className = "name-row";
+    row.insertAdjacentHTML("beforeend", avatarHtml(p.name, p.photo));
+    row.append(line);
+    tdName.append(row);
 
     const tdMin = document.createElement("td");
     tdMin.className = "num";
@@ -725,6 +737,70 @@ $("gateForm").addEventListener("submit", async (e) => {
   unlockAudio();
 });
 $("editName").addEventListener("click", () => openGate(myName));
+
+// ---------- Perfil e historial ----------
+const profileDlg = $("profileDlg");
+let profileTab = "info";
+let profileHtml = "";
+function profileMsg(text, ok) { $("profileMsg").className = ok ? "gate-err ok" : "gate-err"; $("profileMsg").textContent = text; }
+
+function renderProfile() {
+  if (!profileDlg.open) return;
+  const mine = myPlayer();
+  const days = localDays(), chapters = myChapters();
+  const total = mine ? mine.total : sumDays(days);
+  $("profileAvatar").innerHTML = avatarHtml(myName, mine && mine.photo, "avatar-lg");
+  $("profileName").textContent = myName || "Sin nombre";
+  $("profileEmail").textContent = accountEmail() || (connected ? "" : "Sin cuenta iniciada en este dispositivo");
+  $("photoRemove").hidden = !(mine && mine.photo);
+  $("pTabInfo").setAttribute("aria-selected", String(profileTab === "info"));
+  $("pTabHist").setAttribute("aria-selected", String(profileTab === "hist"));
+  const posIn = (list) => { const x = list.find((p) => p.id === myId); return x && x.m > 0 ? x.pos : 0; };
+  const week = rankList(weekKeys(mondayOf(new Date())));
+  const all = rankList("all");
+  const streak = streakOf(days);
+  $("profileChips").innerHTML = `<span class="streak${streak ? "" : " off"}">${FLAME}${streak} ${streak === 1 ? "día" : "días"}</span>`
+    + `<span class="tag tag-chap">${timeLabel(total.m)} en total</span>`;
+  const body = profileTab === "hist"
+    ? historyHtml({ days })
+    : summaryHtml({ days, chapters, total, streak, posWeek: posIn(week), posAll: posIn(all), players: all.length });
+  // solo se redibuja si cambió algo, para no perder el scroll cada vez que se refresca el ranking
+  if (body !== profileHtml) { profileHtml = body; $("profileBody").innerHTML = body; }
+}
+function openProfile(tab) {
+  profileTab = tab;
+  profileMsg("");
+  profileHtml = "";
+  profileDlg.showModal();
+  renderProfile();
+  $("profileBody").scrollTop = 0;
+}
+$("meOpen").addEventListener("click", () => openProfile("info"));
+$("historyBtn").addEventListener("click", () => openProfile("hist"));
+$("profileClose").addEventListener("click", () => profileDlg.close());
+profileDlg.addEventListener("click", (e) => { if (e.target === profileDlg) profileDlg.close(); });
+$("pTabInfo").addEventListener("click", () => { profileTab = "info"; renderProfile(); $("profileBody").scrollTop = 0; });
+$("pTabHist").addEventListener("click", () => { profileTab = "hist"; renderProfile(); $("profileBody").scrollTop = 0; });
+$("profileRename").addEventListener("click", () => { profileDlg.close(); openGate(myName); });
+const pickPhoto = () => {
+  if (!ready()) { profileMsg("Para poner tu foto tenés que haber iniciado sesión y tener internet."); return; }
+  $("photoInput").click();
+};
+$("avatarBtn").addEventListener("click", pickPhoto);
+$("photoPick").addEventListener("click", pickPhoto);
+$("photoInput").addEventListener("change", async (e) => {
+  const file = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const photo = await resizePhoto(file);
+    writeProfile({ photo });
+    profileMsg("Foto guardada. Ya aparece en el ranking.", true);
+  } catch (err) {
+    profileMsg(err && err.message === "too-big" ? "Esa foto no se pudo reducir lo suficiente. Probá con otra." : "Elegí un archivo de imagen (JPG, PNG…).");
+  }
+});
+$("photoRemove").addEventListener("click", () => { writeProfile({ photo: null }); profileMsg("Foto quitada.", true); });
 
 // ---------- Pestañas ----------
 function setView(v) { view = v; store.set("pomo.view", v); renderBoard(); }

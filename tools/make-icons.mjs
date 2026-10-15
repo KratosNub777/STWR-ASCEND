@@ -4,30 +4,21 @@ import { chromium } from "playwright";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
-const BG = "#12111c";
-// tomate con hoja y el anillo de progreso del reloj; viewBox 0..100
-const art = (ring = true) => `
-  <defs>
-    <radialGradient id="t" cx="38%" cy="36%" r="70%">
-      <stop offset="0" stop-color="#ff9a80"/><stop offset=".55" stop-color="#ff6b4a"/><stop offset="1" stop-color="#c8462c"/>
-    </radialGradient>
-  </defs>
-  ${ring ? `<circle cx="50" cy="52" r="34" fill="none" stroke="#2f2d45" stroke-width="5"/>
-  <path d="M50 18 A34 34 0 1 1 20.6 69" fill="none" stroke="#9c9dff" stroke-width="5" stroke-linecap="round"/>` : ""}
-  <circle cx="50" cy="54" r="23" fill="url(#t)"/>
-  <path d="M50 33 c-2-7 3-11 9-11 c-1 6-4 10-9 11Z" fill="#5fd3b5"/>
-  <path d="M50 33 c-3-4-8-5-12-3 c3 4 8 5 12 3Z" fill="#46b89a"/>`;
-const svg = (size, { bg = BG, shape = "square", scale = 1, ring = true } = {}) => {
+const BG = "#000004";
+// el dibujo es el logo en PNG (public/icons/logo-emblema.png); viewBox 0..100
+const logo = "data:image/png;base64," + readFileSync("public/icons/logo-emblema.png").toString("base64");
+const art = () => `<image href="${logo}" x="0" y="0" width="100" height="100"/>`;
+const svg = (size, { bg = BG, shape = "square", scale = 1 } = {}) => {
   const pad = (100 - 100 * scale) / 2;
   const back = shape === "none" ? "" : shape === "circle"
     ? `<circle cx="50" cy="50" r="50" fill="${bg}"/>`
     : shape === "rounded" ? `<rect width="100" height="100" rx="22" fill="${bg}"/>` : `<rect width="100" height="100" fill="${bg}"/>`;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">${back}
-    <g transform="translate(${pad} ${pad}) scale(${scale})">${art(ring)}</g></svg>`;
+    <g transform="translate(${pad} ${pad}) scale(${scale})">${art()}</g></svg>`;
 };
 // silueta blanca para la barra de notificaciones (Android la exige monocroma)
 const statSvg = (size) => `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-  <circle cx="12" cy="13.5" r="8" fill="#fff"/><path d="M12 5.6c-.7-2.4 1-3.9 3.2-3.9-.4 2.1-1.4 3.5-3.2 3.9Z" fill="#fff"/></svg>`;
+  <circle cx="12" cy="4.6" r="2.6" fill="#fff"/><path d="M12 8.6 3 21.5h5.2L12 15.2l3.8 6.3H21Z" fill="#fff"/></svg>`;
 
 const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
 const page = await browser.newPage();
@@ -39,7 +30,6 @@ async function png(file, markup, w, h = w) {
 }
 
 // Web / PWA
-writeFileSync("public/icons/icon.svg", svg(512, { shape: "rounded" }));
 await png("public/icons/icon-192.png", svg(192, { shape: "rounded" }), 192);
 await png("public/icons/icon-512.png", svg(512, { shape: "rounded" }), 512);
 await png("public/icons/maskable-512.png", svg(512, { scale: 0.72 }), 512);

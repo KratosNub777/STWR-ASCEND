@@ -54,3 +54,45 @@ export function confirmDialog({ title, text, okLabel = "Aceptar", cancelLabel = 
     dlg.showModal();
   });
 }
+
+// Avatar: la foto si hay, y si no, la inicial del nombre sobre un color que sale del propio nombre.
+const AVATAR_COLORS = ["#ff6b4a", "#5fd3b5", "#9c9dff", "#f5c451", "#ff8fb1", "#5fb0ff", "#b58cff", "#7bd96b"];
+export function avatarHtml(name, photo, extra = "") {
+  const cls = `avatar${extra ? " " + extra : ""}`;
+  if (photo) return `<span class="${cls}"><img src="${escapeHtml(photo)}" alt="" loading="lazy"></span>`;
+  const n = String(name || "?").trim();
+  let h = 0;
+  for (const c of n) h = (h * 31 + c.codePointAt(0)) >>> 0;
+  const initial = escapeHtml((Array.from(n)[0] || "?").toUpperCase());
+  return `<span class="${cls}" style="background:${AVATAR_COLORS[h % AVATAR_COLORS.length]}">${initial}</span>`;
+}
+
+// Reduce una foto elegida a un cuadrado de 96 px en JPEG (unos pocos KB) para guardarla en el documento del jugador.
+// Devuelve el texto "data:image/jpeg;base64,..." o lanza un Error si el archivo no es una imagen.
+export async function resizePhoto(file, size = 96, maxChars = 12000) {
+  if (!file || !/^image\//.test(file.type)) throw new Error("not-image");
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, fail) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => fail(new Error("not-image"));
+      i.src = url;
+    });
+    const side = Math.min(img.naturalWidth, img.naturalHeight);
+    if (!side) throw new Error("not-image");
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#12111c";
+    ctx.fillRect(0, 0, size, size);
+    ctx.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+    for (let q = 0.82; q >= 0.4; q -= 0.14) {
+      const out = canvas.toDataURL("image/jpeg", q);
+      if (out.length <= maxChars) return out;
+    }
+    throw new Error("too-big");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
