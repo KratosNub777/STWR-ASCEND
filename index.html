@@ -91,8 +91,14 @@
       </div>
     </div>
     <div class="me-chip">
-      <span class="who" id="meName">—</span>
+      <button class="me-open" id="meOpen" type="button" aria-label="Abrir mi perfil" title="Mi perfil">
+        <span id="meAvatar"></span>
+        <span class="who" id="meName">—</span>
+      </button>
       <span class="streak off" id="meStreak" title="Racha de días seguidos estudiando"></span>
+      <button class="icon-btn" id="historyBtn" type="button" aria-label="Mi historial de estudio" title="Mi historial">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+      </button>
       <button class="icon-btn" id="editName" type="button" aria-label="Cambiar mi nombre">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg>
       </button>
@@ -213,6 +219,37 @@
       <button class="btn btn-danger" id="confirmOk" type="submit" value="ok"></button>
     </div>
   </form>
+</dialog>
+
+<dialog class="profile" id="profileDlg" aria-labelledby="profileName">
+  <div class="profile-card">
+    <button class="icon-btn profile-close" id="profileClose" type="button" aria-label="Cerrar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    </button>
+    <div class="profile-head">
+      <button class="avatar-edit" id="avatarBtn" type="button" aria-label="Cambiar foto de perfil">
+        <span id="profileAvatar"></span>
+        <span class="avatar-cam" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L8 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-3Z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      </button>
+      <input type="file" id="photoInput" accept="image/*" hidden>
+      <div class="profile-who">
+        <h2 id="profileName"></h2>
+        <p id="profileEmail"></p>
+        <div class="profile-chips" id="profileChips"></div>
+      </div>
+    </div>
+    <div class="profile-actions">
+      <button class="btn btn-ghost" id="photoPick" type="button">Cambiar foto</button>
+      <button class="btn btn-ghost" id="photoRemove" type="button">Quitar foto</button>
+      <button class="btn btn-ghost" id="profileRename" type="button">Cambiar nombre</button>
+    </div>
+    <div class="gate-err" id="profileMsg" role="alert"></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="pTabInfo" aria-selected="true" type="button">Resumen</button>
+      <button role="tab" id="pTabHist" aria-selected="false" type="button">Historial</button>
+    </div>
+    <div class="profile-body" id="profileBody"></div>
+  </div>
 </dialog>
 
 <div class="toast-zone" id="toasts" aria-live="polite"></div>
