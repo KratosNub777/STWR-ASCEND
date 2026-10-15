@@ -897,17 +897,17 @@ let resetStep = "email";
 let resetBusy = false;
 const resetErr = (msg, ok) => { $("resetErr").className = ok ? "gate-err ok" : "gate-err"; $("resetErr").textContent = msg; };
 
-function openReset(step, email, code) {
+function openReset(step, email) {
   resetStep = step;
   resetErr("");
   $("auth").hidden = true;
   $("gate").hidden = true;
   $("reset").hidden = false;
   $("resetEmail").value = email || "";
-  $("resetCode").value = code || "";
+  $("resetCode").value = "";
   $("resetPass").value = "";
   renderReset();
-  setTimeout(() => { try { $(step === "email" ? "resetEmail" : code ? "resetPass" : "resetCode").focus(); } catch {} }, 50);
+  setTimeout(() => { try { $(step === "email" ? "resetEmail" : "resetCode").focus(); } catch {} }, 50);
 }
 function renderReset() {
   const first = resetStep === "email";
@@ -916,8 +916,8 @@ function renderReset() {
   $("resetText").textContent = first
     ? "Escribí el correo de tu cuenta y te mandamos un código para elegir una contraseña nueva."
     : (email
-      ? `Si ${email} tiene cuenta, te mandamos un código. Pegalo acá (si te llegó un enlace, pegá el enlace entero). Mirá también en spam.`
-      : "Pegá el código que te llegó por correo (si te llegó un enlace, pegá el enlace entero) y elegí tu contraseña nueva.");
+      ? `Si ${email} tiene cuenta, te mandamos un código de 6 dígitos. Escribilo acá y elegí tu contraseña nueva. Mirá también en spam.`
+      : "Escribí el código de 6 dígitos que te llegó por correo y elegí tu contraseña nueva.");
   $("resetEmailField").hidden = !first;
   $("resetCodeField").hidden = first;
   $("resetPassField").hidden = first;
