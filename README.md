@@ -1,7 +1,7 @@
 # STWR-ASCEND
 
 Pomodoro competitivo para estudiar con amigos: reloj circular, capítulos del 1 al 13, tiempos personalizables
-y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y avisos al subir de puesto.
+y ranking compartido en vivo (Hoy, Esta semana, Este mes y General), con racha de días y avisos al subir de puesto.
 
 ## Estructura
 
