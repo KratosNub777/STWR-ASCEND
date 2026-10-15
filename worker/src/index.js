@@ -149,3 +149,54 @@ export class ResetCode {
 
 const box = async (env, email) => env.RESET.get(env.RESET.idFromName(await sha(email)));
 const call = (stub, path, body) => stub.fetch(`https://reset${path}`, { method: "POST", body: JSON.stringify(body) });
+
+// ---------- Rutas ----------
+async function send(env, data) {
+  const email = normEmail(data.email);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail(400, "invalid-email");
+  // misma respuesta exista o no la cuenta: no sirve para averiguar quién está registrado
+  let uid;
+  try { uid = await findUid(env, email); } catch (e) { console.error(e.message); return fail(500, "lookup-failed"); }
+  if (!uid) return json({ ok: true });
+
+  const stub = await box(env, email);
+  const issued = await call(stub, "/issue", { email });
+  if (issued.status === 429) return fail(429, "too-soon");
+  const { code } = await issued.json();
+  // solo en pruebas locales (wrangler dev --var DEV:1): no manda correo y devuelve el código
+  if (env.DEV === "1") return json({ ok: true, debugCode: code });
+  try { await sendMail(env, email, code); }
+  catch (e) { console.error(e.message); await call(stub, "/clear", {}); return fail(500, "mail-failed"); }
+  return json({ ok: true });
+}
+
+async function confirm(env, data) {
+  const email = normEmail(data.email);
+  const code = String(data.code || "").replace(/\s+/g, "");
+  const password = String(data.password || "");
+  if (!email || !/^\d{6}$/.test(code)) return fail(400, "invalid-code");
+  if (password.length < 6 || password.length > 128) return fail(400, "weak-password");
+
+  const { verdict } = await (await call(await box(env, email), "/check", { email, code })).json();
+  if (verdict === "expired") return fail(410, "expired-code");
+  if (verdict !== "ok") return fail(403, "invalid-code");
+  try {
+    const uid = await findUid(env, email);
+    if (!uid) return fail(403, "invalid-code");
+    await identity(env, "update", { localId: uid, password });
+  } catch (e) { console.error(e.message); return fail(500, "update-failed"); }
+  return json({ ok: true });
+}
+
+export default {
+  async fetch(req, env) {
+    if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+    if (req.method !== "POST") return fail(405, "method");
+    const path = new URL(req.url).pathname;
+    const data = await req.json().catch(() => null);
+    if (!data || typeof data !== "object") return fail(400, "bad-request");
+    if (path === "/send") return send(env, data);
+    if (path === "/confirm") return confirm(env, data);
+    return fail(404, "not-found");
+  }
+};
