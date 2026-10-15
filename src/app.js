@@ -932,6 +932,43 @@ $("resetResend").addEventListener("click", async () => {
   catch (e) { resetErr(authError(e)); }
   finally { resetBusy = false; }
 });
+$("resetForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (resetBusy) return;
+  resetErr("");
+  const btn = $("resetSubmit"), label = btn.textContent;
+  if (resetStep === "email") {
+    const email = $("resetEmail").value.trim();
+    if (!email) { resetErr(AUTH_ERRORS["auth/missing-email"]); return; }
+    resetBusy = true; btn.disabled = true; btn.textContent = "Mandando…";
+    try {
+      await resetPassword(email);
+      resetStep = "code";
+      renderReset();
+      resetErr("Código enviado. Puede tardar un minuto en llegar.", true);
+      try { $("resetCode").focus(); } catch {}
+    } catch (e2) { resetErr(authError(e2)); }
+    finally { resetBusy = false; btn.disabled = false; if (resetStep === "email") btn.textContent = label; }
+    return;
+  }
+  const code = extractCode($("resetCode").value);
+  const pass = $("resetPass").value;
+  if (!code) { resetErr("Pegá el código que te llegó por correo."); return; }
+  if (!pass) { resetErr(AUTH_ERRORS["auth/missing-password"]); return; }
+  resetBusy = true; btn.disabled = true; btn.textContent = "Cambiando…";
+  try {
+    const email = await checkResetCode(code);
+    await setNewPassword(code, pass);
+    $("reset").hidden = true;
+    openAuth("login");
+    $("authEmail").value = email;
+    $("authErr").className = "gate-err ok";
+    $("authErr").textContent = "Listo, cambiaste tu contraseña. Entrá con la nueva.";
+    setTimeout(() => { try { $("authPass").focus(); } catch {} }, 60);
+  } catch (e2) { resetErr(authError(e2)); }
+  finally { resetBusy = false; btn.disabled = false; btn.textContent = label; }
+});
+
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
