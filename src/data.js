@@ -5,7 +5,8 @@
 import { initializeApp } from "firebase/app";
 import {
   getAuth, connectAuthEmulator, EmailAuthProvider, linkWithCredential,
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, signOut
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
+  verifyPasswordResetCode, confirmPasswordReset, signOut
 } from "firebase/auth";
 import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
@@ -70,6 +71,7 @@ export async function logIn(email, password) {
   return uid;
 }
 
+/** Manda el correo con el código para cambiar la contraseña. */
 export function resetPassword(email) {
   init();
   return sendPasswordResetEmail(auth, email);
