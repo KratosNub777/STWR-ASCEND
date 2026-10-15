@@ -2,7 +2,7 @@
 import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
-  isConfigured, currentAccount, register, logIn, resetPassword, logOut, watchPlayers, loadMine, createMine, updateMine
+  isConfigured, currentAccount, register, logIn, resetPassword, checkResetCode, setNewPassword, logOut, watchPlayers, loadMine, createMine, updateMine
 } from "./data.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
 // ---------- Constantes ----------
