@@ -210,6 +210,22 @@
   </section>
 </main>
 
+<div class="gate" id="codeGate" hidden>
+  <form class="gate-card auth-card" id="codeForm" novalidate>
+    <img class="brand-mark" src="./icons/logo-emblema.png" alt="" aria-hidden="true">
+    <h2 id="codeTitle"></h2>
+    <p id="codeText"></p>
+    <div class="field">
+      <label for="codeInput">Código de 6 dígitos</label>
+      <input id="codeInput" name="codeInput" placeholder="6 dígitos" maxlength="6" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" spellcheck="false">
+    </div>
+    <div class="gate-err" id="codeErr" role="alert"></div>
+    <button class="btn btn-primary" type="submit" id="codeSubmit"></button>
+    <button class="link-btn" type="button" id="codeResend">No me llegó: mandar de nuevo</button>
+    <button class="link-btn" type="button" id="codeBack"></button>
+  </form>
+</div>
+
 <dialog class="confirm" id="confirmDlg" aria-labelledby="confirmTitle" aria-describedby="confirmText">
   <form method="dialog" class="confirm-card">
     <span class="confirm-icon" id="confirmIcon" aria-hidden="true"></span>
@@ -250,6 +266,9 @@
       <button role="tab" id="pTabHist" aria-selected="false" type="button">Historial</button>
     </div>
     <div class="profile-body" id="profileBody"></div>
+    <div class="profile-danger">
+      <button class="link-btn danger" id="deleteBtn" type="button">Eliminar mi cuenta</button>
+    </div>
   </div>
 </dialog>
 

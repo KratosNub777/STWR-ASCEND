@@ -443,3 +443,6 @@ tr.lead .avatar { box-shadow: 0 0 0 2px var(--gold); }
 .hist-week .bar { height: 7px; background: var(--bg); }
 @media (max-width: 380px) { .stat-grid { grid-template-columns: 1fr; } .profile-head { align-items: flex-start; } }
 @media (prefers-reduced-motion: reduce) { .profile[open] { animation: none; } }
+
+.profile-danger { padding: 10px 0 16px; border-top: 1px solid var(--line); text-align: center; }
+.link-btn.danger { color: var(--danger); }
