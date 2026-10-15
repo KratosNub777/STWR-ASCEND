@@ -34,7 +34,7 @@ service cloud.firestore {
 
   function validShape(d) {
     return d.keys().hasAll(['name', 'days', 'chapters', 'total', 'updatedAt', 'lastAt'])
-      && d.keys().hasOnly(['name', 'days', 'chapters', 'total', 'current', 'updatedAt', 'lastAt', 'lastDay', 'lastSession'])
+      && d.keys().hasOnly(['name', 'days', 'chapters', 'total', 'current', 'updatedAt', 'lastAt', 'lastDay', 'lastSession', 'photo'])
       && d.name is string && d.name.size() >= 1 && d.name.size() <= 24
       && d.days is map && d.days.size() <= 80
       && d.chapters is map && d.chapters.size() <= 13
@@ -44,7 +44,13 @@ service cloud.firestore {
       && d.lastAt is timestamp
       && (!('current' in d) || (d.current is int && d.current >= 1 && d.current <= 13))
       && (!('lastDay' in d) || (d.lastDay is string && d.lastDay.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
-      && (!('lastSession' in d) || d.lastSession is int);
+      && (!('lastSession' in d) || d.lastSession is int)
+      && (!('photo' in d) || validPhoto(d.photo));
+  }
+
+  // foto de perfil: miniatura JPEG chica guardada como texto (la app la reduce a 96 px antes de subirla)
+  function validPhoto(p) {
+    return p is string && p.size() <= 16000 && p.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$');
   }
 
   // al crearse, el documento arranca en cero

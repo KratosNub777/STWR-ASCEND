@@ -3,7 +3,7 @@
 import { test, before, after, beforeEach } from "node:test";
 import { readFileSync } from "node:fs";
 import { initializeTestEnvironment, assertSucceeds, assertFails } from "@firebase/rules-unit-testing";
-import { doc, getDoc, getDocs, collection, setDoc, updateDoc, deleteDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection, setDoc, updateDoc, deleteDoc, deleteField, serverTimestamp, Timestamp } from "firebase/firestore";
 
 let env;
 const minutesAgo = (n) => Timestamp.fromMillis(Date.now() - n * 60e3);
@@ -63,6 +63,17 @@ test("nadie puede modificar ni borrar el documento de otro", async () => {
 test("cambiar el nombre o el capítulo actual está permitido", async () => {
   await seedAna(30);
   await assertSucceeds(updateDoc(doc(as("ana"), "players/ana"), { name: "Anita", current: 7, updatedAt: serverTimestamp() }));
+});
+
+const JPEG = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ==";
+test("la foto de perfil se puede poner y quitar, pero solo como JPEG chico", async () => {
+  await seedAna(30);
+  const ref = doc(as("ana"), "players/ana");
+  await assertSucceeds(updateDoc(ref, { photo: JPEG, updatedAt: serverTimestamp() }));
+  await assertSucceeds(updateDoc(ref, { photo: deleteField(), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { photo: "http://sitio.com/foto.png", updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(ref, { photo: "data:image/jpeg;base64," + "A".repeat(16000), updatedAt: serverTimestamp() }));
+  await assertFails(updateDoc(doc(as("beto"), "players/ana"), { photo: JPEG, updatedAt: serverTimestamp() }));
 });
 
 test("sumar una sesión completa después del tiempo real está permitido", async () => {
