@@ -889,6 +889,34 @@ function extractCode(raw) {
   return m ? decodeURIComponent(m[1]) : s;
 }
 
+function openReset(step, email, code) {
+  resetStep = step;
+  resetErr("");
+  $("auth").hidden = true;
+  $("gate").hidden = true;
+  $("reset").hidden = false;
+  $("resetEmail").value = email || "";
+  $("resetCode").value = code || "";
+  $("resetPass").value = "";
+  renderReset();
+  setTimeout(() => { try { $(step === "email" ? "resetEmail" : code ? "resetPass" : "resetCode").focus(); } catch {} }, 50);
+}
+function renderReset() {
+  const first = resetStep === "email";
+  const email = $("resetEmail").value.trim();
+  $("resetTitle").textContent = first ? "Recuperá tu contraseña" : "Elegí tu contraseña nueva";
+  $("resetText").textContent = first
+    ? "Escribí el correo de tu cuenta y te mandamos un código para elegir una contraseña nueva."
+    : (email
+      ? `Si ${email} tiene cuenta, te mandamos un código. Pegalo acá (si te llegó un enlace, pegá el enlace entero). Mirá también en spam.`
+      : "Pegá el código que te llegó por correo (si te llegó un enlace, pegá el enlace entero) y elegí tu contraseña nueva.");
+  $("resetEmailField").hidden = !first;
+  $("resetCodeField").hidden = first;
+  $("resetPassField").hidden = first;
+  $("resetResend").hidden = first || !email;
+  $("resetSubmit").textContent = first ? "Mandar código" : "Cambiar contraseña";
+}
+
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
