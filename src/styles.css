@@ -345,6 +345,9 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
   .btn { transition: none; }
 }
 
+/* Diálogo de confirmación (reemplaza al confirm() del navegador) */
+.btn-danger { background: var(--danger); color: #2a0c0c; }
+
 /* Aviso de versión nueva (app Android) */
 .update-bar {
   grid-column: 1 / -1; display: block; text-decoration: none; color: var(--fg);
