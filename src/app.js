@@ -969,6 +969,21 @@ $("resetForm").addEventListener("submit", async (e) => {
   finally { resetBusy = false; btn.disabled = false; btn.textContent = label; }
 });
 
+// el enlace del correo puede abrir la app con el código ya puesto
+async function openResetFromLink() {
+  const q = new URLSearchParams(location.search);
+  const code = q.get("oobCode");
+  if (q.get("mode") !== "resetPassword" || !code) return false;
+  history.replaceState(null, "", location.pathname);
+  openReset("code", "", code);
+  try {
+    const email = await checkResetCode(code);
+    $("resetEmail").value = email;
+    renderReset();
+  } catch (e) { resetErr(authError(e)); }
+  return true;
+}
+
 $("authForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   if (authBusy) return;
@@ -1034,6 +1049,7 @@ export function startApp() {
   renderBoard();
   // sin Firebase configurado no hay cuentas: alcanza con el nombre
   if (!myName && !isConfigured()) openGate("");
+  if (isConfigured()) openResetFromLink();
   connect();
   checkForUpdate();
 }
