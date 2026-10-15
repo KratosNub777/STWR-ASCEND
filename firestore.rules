@@ -2,7 +2,7 @@ rules_version = '2';
 
 // Reglas de STWR-ASCEND
 // - Cualquiera puede LEER el ranking.
-// - Cada persona solo puede ESCRIBIR su propio documento: players/{su uid anónimo}.
+// - Cada persona solo puede ESCRIBIR su propio documento: players/{su uid}. Para crearlo, el correo tiene que estar verificado.
 // - Se valida la forma de los datos y que los minutos sumados sean creíbles:
 //   nunca más minutos que el tiempo real que pasó desde el último guardado con minutos.
 service cloud.firestore {
@@ -10,7 +10,7 @@ service cloud.firestore {
 
     match /players/{uid} {
       allow read: if true;
-      allow create: if isOwner(uid) && validShape(request.resource.data) && isEmptyStart(request.resource.data);
+      allow create: if isOwner(uid) && isVerified() && validShape(request.resource.data) && isEmptyStart(request.resource.data);
       allow update: if isOwner(uid) && validShape(request.resource.data)
                     && (noProgress(request.resource.data, resource.data)
                         || validProgress(request.resource.data, resource.data));
@@ -25,6 +25,11 @@ service cloud.firestore {
 
   function isOwner(uid) {
     return request.auth != null && request.auth.uid == uid;
+  }
+
+  // la cuenta tiene el correo verificado con el código (el servidor lo marca al confirmarlo)
+  function isVerified() {
+    return request.auth.token.email_verified == true;
   }
 
   function validCounter(c) {

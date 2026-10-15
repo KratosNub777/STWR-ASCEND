@@ -17,7 +17,8 @@ before(async () => {
 after(() => env.cleanup());
 beforeEach(() => env.clearFirestore());
 
-const as = (uid) => env.authenticatedContext(uid).firestore();
+const as = (uid) => env.authenticatedContext(uid, { email_verified: true }).firestore();
+const asUnverified = (uid) => env.authenticatedContext(uid, { email_verified: false }).firestore();
 const anon = () => env.unauthenticatedContext().firestore();
 
 // documento existente de "ana", guardado hace `ago` minutos
@@ -50,6 +51,16 @@ test("cada uno crea solo su propio documento, y en cero", async () => {
   await assertFails(setDoc(doc(as("beto"), "players/carla"), fresh("Carla")));
   await assertFails(setDoc(doc(anon(), "players/nadie"), fresh("Nadie")));
   await assertFails(setDoc(doc(as("dani"), "players/dani"), { ...fresh("Dani"), total: { m: 500, s: 20 } }));
+});
+
+test("sin el correo verificado no se puede crear el documento", async () => {
+  await assertFails(setDoc(doc(asUnverified("eli"), "players/eli"), fresh("Eli")));
+  await assertSucceeds(setDoc(doc(as("eli"), "players/eli"), fresh("Eli")));
+});
+
+test("quien ya tenía documento sigue guardando aunque su correo no esté verificado", async () => {
+  await seedAna(30);
+  await assertSucceeds(updateDoc(doc(asUnverified("ana"), "players/ana"), plus25()));
 });
 
 test("nadie puede modificar ni borrar el documento de otro", async () => {

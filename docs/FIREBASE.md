@@ -143,9 +143,31 @@ Abrí la app → **Iniciar sesión** → **Olvidé mi contraseña** → poné el
 Si cambiás un secreto o `wrangler.toml`, volvé a correr `npx wrangler deploy` dentro de `worker/`.
 
 ### Probar en tu computadora (opcional)
-Sin mandar correos ni tocar tu proyecto real: en tres terminales, `npm run emulators`, `cd worker && npx wrangler dev --port 8787 --var DEV:1 --var FIREBASE_AUTH_EMULATOR:http://127.0.0.1:9099 --var FIREBASE_PROJECT:demo-stwr` y `VITE_USE_EMULATOR=1 npm run dev`. Con `DEV:1` el servidor no manda correo: devuelve el código en la respuesta. **Nunca** pongas `DEV` en el servidor publicado.
+Sin mandar correos ni tocar tu proyecto real: en tres terminales, `npm run emulators`, `cd worker && npx wrangler dev --port 8787 --var DEV:1 --var FIREBASE_AUTH_EMULATOR:http://127.0.0.1:9099 --var FIREBASE_PROJECT:demo-stwr --var FIREBASE_API_KEY:demo-key --var FIRESTORE_EMULATOR:http://127.0.0.1:8080` y `VITE_USE_EMULATOR=1 npm run dev`. Con `DEV:1` el servidor no manda correo: devuelve el código en la respuesta. **Nunca** pongas `DEV` en el servidor publicado.
 
 ---
+
+## 7. Verificar el correo al registrarse y eliminar la cuenta
+
+El mismo servidor de la sección 6 manda otros dos códigos de 6 dígitos por correo (valen 10 minutos y sirven una sola vez):
+
+- **Al registrarse:** la app pide el código antes de dejar entrar. Con el código correcto, el servidor marca el correo como verificado y recién ahí se crea la persona en el ranking. Las reglas de `firestore.rules` lo exigen para crear el documento. Quien ya jugaba antes sigue entrando sin que se le pida nada.
+- **Al eliminar la cuenta:** desde **Mi perfil → Eliminar mi cuenta**. La app pregunta dos veces y manda un código al correo. Con el código correcto, el servidor borra el documento del ranking y la cuenta.
+
+### Cómo actualizar (el orden importa)
+Si ya tenías publicado el servidor de la sección 6, hay que actualizarlo **antes** de las reglas y de la web:
+
+1. `cd worker && npx wrangler deploy` (publica las rutas nuevas; la clave web `FIREBASE_API_KEY` ya viene en `wrangler.toml`, no es secreta).
+2. Pegá `firestore.rules` en **Firestore Database → Reglas** y tocá **Publicar** (paso 4).
+3. Recién entonces subí la web a `main`.
+
+Si hacés las reglas o la web antes que el servidor, las cuentas nuevas se quedan sin poder verificar. Quien ya estaba registrado no se ve afectado.
+
+### Permiso para borrar datos
+El servidor usa la misma clave de administrador del paso 6.1. Si al eliminar una cuenta la app dice "No se pudo eliminar la cuenta" y `npx wrangler tail` muestra `firestore delete 403`, entrá a la consola de Google Cloud → **IAM**, buscá la cuenta de servicio `firebase-adminsdk-…` y agregale el rol **Usuario de Cloud Datastore**.
+
+### Probar
+Registrá una cuenta nueva: tiene que llegar un correo con el asunto "Tu código para verificar tu cuenta" (mirá en **spam**). Para probar el borrado, usá una cuenta de prueba.
 
 ## ¿Cómo sé que funcionó?
 

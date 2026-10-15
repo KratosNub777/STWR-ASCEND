@@ -48,7 +48,7 @@ export async function currentAccount() {
   await auth.authStateReady();
   const u = auth.currentUser;
   if (u) uid = u.uid;
-  return u ? { uid: u.uid, anonymous: u.isAnonymous, email: u.email || "" } : null;
+  return u ? { uid: u.uid, anonymous: u.isAnonymous, email: u.email || "", verified: u.emailVerified } : null;
 }
 
 /** Crea una cuenta. Si el dispositivo tenía una cuenta anónima, la convierte (mismo uid, mismos minutos). */
@@ -94,6 +94,30 @@ export function requestResetCode(email) {
 /** Cambia la contraseña con el código que llegó por correo. */
 export function confirmReset(email, code, password) {
   return resetCall("/confirm", { email, code, password });
+}
+
+/**
+ * Códigos por correo que pide el servidor con la sesión de la cuenta.
+ * kind = "verify" (verificar el correo al registrarse) o "delete" (eliminar la cuenta).
+ * Si el correo ya estaba verificado, sendCode devuelve { verified: true }.
+ */
+async function sessionToken() {
+  const u = auth && auth.currentUser;
+  if (!u) throw new Error("bad-session");
+  return u.getIdToken(true);
+}
+export async function sendCode(kind) {
+  return resetCall(`/${kind}/send`, { idToken: await sessionToken() });
+}
+export async function confirmCode(kind, code) {
+  await resetCall(`/${kind}/confirm`, { idToken: await sessionToken(), code });
+  if (kind === "verify") {
+    // la sesión tiene que enterarse de que el correo ya está verificado (lo piden las reglas)
+    await auth.currentUser.reload();
+    await auth.currentUser.getIdToken(true);
+  } else {
+    try { await signOut(auth); } catch {}   // la cuenta ya no existe
+  }
 }
 
 export function logOut() {
@@ -144,3 +168,6 @@ export const removeField = () => deleteField();
 export function accountEmail() {
   return (auth && auth.currentUser && auth.currentUser.email) || "";
 }
+
+/** ¿La cuenta con la sesión iniciada ya verificó su correo con el código? */
+export const accountVerified = () => !!(auth && auth.currentUser && auth.currentUser.emailVerified);

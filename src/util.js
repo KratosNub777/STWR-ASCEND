@@ -18,6 +18,9 @@ export const mondayOf = (d) => {
   const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   return addDays(x, -((x.getDay() + 6) % 7));
 };
+// Todos los días de un mes (month: 0 a 11)
+export const monthKeys = (year, month) =>
+  Array.from({ length: new Date(year, month + 1, 0).getDate() }, (_, i) => dayKey(new Date(year, month, i + 1)));
 export const weekKeys = (monday) => Array.from({ length: 7 }, (_, i) => dayKey(addDays(monday, i)));
 
 export const clone = (v) => JSON.parse(JSON.stringify(v ?? {}));
