@@ -222,6 +222,8 @@ button { cursor: pointer; }
   border: 0; background: none; padding: 7px 14px; border-radius: 9px; font-weight: 600; color: var(--muted); font-size: .9rem;
 }
 .tabs button[aria-selected="true"] { background: var(--surface-2); color: var(--fg); }
+.board-head .tabs button { padding: 7px 10px; }
+@media (min-width: 400px) { .board-head .tabs button { padding: 7px 12px; } }
 .board-meta { color: var(--muted); font-size: .85rem; display: flex; flex-wrap: wrap; gap: 4px 14px; }
 .board-meta b { color: var(--fg); font-weight: 600; }
 .table-wrap { overflow-x: auto; margin: 0 -8px; }
