@@ -11,6 +11,7 @@
 // El código se guarda con hash en un Durable Object por correo (vale 10 minutos, 5 intentos, un solo uso).
 // La contraseña se cambia con la cuenta de servicio de Firebase (API de administrador de Identity Toolkit).
 
+const WEB_REFERER = "https://kratosnub777.github.io/STWR-ASCEND/";
 const CODE_TTL_MS = 10 * 60e3;
 const RESEND_MS = 60e3;
 const MAX_ATTEMPTS = 5;
@@ -104,8 +105,11 @@ async function accountOf(env, idToken) {
   const base = env.FIREBASE_AUTH_EMULATOR
     ? `${env.FIREBASE_AUTH_EMULATOR}/identitytoolkit.googleapis.com`
     : "https://identitytoolkit.googleapis.com";
+  // La clave web está restringida a la página de la app (restricción por Referer en Google Cloud);
+  // el servidor no es un navegador, así que manda ese mismo origen para que Google no la bloquee.
   const res = await fetch(`${base}/v1/accounts:lookup?key=${encodeURIComponent(env.FIREBASE_API_KEY || "")}`, {
-    method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ idToken })
+    method: "POST", headers: { "content-type": "application/json", referer: env.WEB_REFERER || WEB_REFERER },
+    body: JSON.stringify({ idToken })
   });
   if (!res.ok) return null;
   const u = ((await res.json()).users || [])[0];
