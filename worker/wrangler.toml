@@ -6,7 +6,7 @@ compatibility_date = "2025-01-01"
 
 [vars]
 # Correo remitente: tiene que ser el que verificaste en Brevo.
-MAIL_FROM = "CAMBIAR@ejemplo.com"
+MAIL_FROM = "facundovera0702@gmail.com"
 MAIL_FROM_NAME = "STWR-ASCEND"
 # Clave web de Firebase (la misma de src/firebase-config.js; NO es secreta): sirve para comprobar la sesión de quien pide un código.
 FIREBASE_API_KEY = "AIzaSyDPs9S-MWTp65P9Kv0mPbNpi4sp3nE5IRM"
