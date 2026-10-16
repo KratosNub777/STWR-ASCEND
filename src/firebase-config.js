@@ -21,3 +21,8 @@ export const firebaseConfig = {
 // Dirección del servidor que manda el código de 6 dígitos para recuperar la contraseña
 // (el Worker de la carpeta worker/). Se obtiene al publicarlo: ver docs/FIREBASE.md, sección 6.
 export const RESET_API_URL = "https://stwr-reset.pomodorinho.workers.dev";
+
+// App Check: evita que alguien use la apiKey de arriba desde un script propio, fuera de esta web
+// (lecturas masivas del ranking, por ejemplo). Clave pública, no un secreto. Mientras diga "PEGAR_AQUI"
+// la app funciona igual, sin protección extra. Se obtiene en Firebase → App Check: ver docs/FIREBASE.md, sección 9.
+export const APPCHECK_SITE_KEY = "PEGAR_AQUI";
