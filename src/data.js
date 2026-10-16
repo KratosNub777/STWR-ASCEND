@@ -3,6 +3,7 @@
 // Las cuentas anónimas de antes se convierten en cuentas con correo sin cambiar el uid, así no pierden sus minutos.
 
 import { initializeApp } from "firebase/app";
+import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import {
   getAuth, connectAuthEmulator, EmailAuthProvider, linkWithCredential,
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut
@@ -11,7 +12,7 @@ import {
   initializeFirestore, getFirestore, persistentLocalCache, persistentMultipleTabManager,
   connectFirestoreEmulator, collection, doc, onSnapshot, getDoc, setDoc, updateDoc, deleteField, serverTimestamp
 } from "firebase/firestore";
-import { firebaseConfig, RESET_API_URL } from "./firebase-config.js";
+import { firebaseConfig, RESET_API_URL, APPCHECK_SITE_KEY } from "./firebase-config.js";
 
 const USE_EMULATOR = import.meta.env.VITE_USE_EMULATOR === "1";
 
@@ -24,6 +25,10 @@ function init() {
   if (app) return;
   const config = USE_EMULATOR ? { apiKey: "demo-key", projectId: "demo-stwr", appId: "demo-app" } : firebaseConfig;
   app = initializeApp(config);
+  // Mientras no esté configurada (ver src/firebase-config.js) no hace nada: la app sigue andando igual.
+  if (!USE_EMULATOR && APPCHECK_SITE_KEY && APPCHECK_SITE_KEY !== "PEGAR_AQUI") {
+    try { initializeAppCheck(app, { provider: new ReCaptchaV3Provider(APPCHECK_SITE_KEY), isTokenAutoRefreshEnabled: true }); } catch {}
+  }
   auth = getAuth(app);
   auth.languageCode = "es";
   try {
