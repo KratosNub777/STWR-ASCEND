@@ -22,7 +22,7 @@ export const firebaseConfig = {
 // (el Worker de la carpeta worker/). Se obtiene al publicarlo: ver docs/FIREBASE.md, sección 6.
 export const RESET_API_URL = "https://stwr-reset.pomodorinho.workers.dev";
 
-// App Check: evita que alguien use la apiKey de arriba desde un script propio, fuera de esta web
-// (lecturas masivas del ranking, por ejemplo). Clave pública, no un secreto. Mientras diga "PEGAR_AQUI"
-// la app funciona igual, sin protección extra. Se obtiene en Firebase → App Check: ver docs/FIREBASE.md, sección 9.
-export const APPCHECK_SITE_KEY = "PEGAR_AQUI";
+// App Check (Google Fraud Defense / reCAPTCHA Enterprise): evita que alguien use la apiKey de arriba
+// desde un script propio, fuera de esta web (lecturas masivas del ranking, por ejemplo). Clave pública,
+// no un secreto. Se obtiene en Firebase → App Check: ver docs/FIREBASE.md, sección 9.
+export const APPCHECK_SITE_KEY = "6LfhJ_ItAAAAAODK3EwKwvlPAXROqBdRUoGf8sypA";
