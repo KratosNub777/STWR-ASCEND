@@ -2,19 +2,28 @@
 
 El APK se compila solo en GitHub cada vez que entra un cambio a la rama `main`. No hace falta Android Studio.
 
-## 1. Cargar la contraseña de la firma (una sola vez)
+## 1. Cargar la clave de firma (una sola vez)
 
 Android solo instala una actualización encima de la anterior si las dos están firmadas con la **misma clave**.
-La clave está en el repo (`android/app/stwr-release.p12`) protegida por una contraseña, y la contraseña tiene que guardarse en GitHub como "secreto" para que nadie más la vea.
+La clave **no está en el repo** (el repo es público): vive como "secreto" de GitHub, junto con su contraseña.
 
 1. Entrá a **https://github.com/KratosNub777/STWR-ASCEND/settings/secrets/actions**
-2. Tocá **New repository secret**.
-3. En **Name** escribí exactamente: `ANDROID_KEYSTORE_PASSWORD`
-4. En **Secret** pegá la contraseña que te pasó Claude en el chat.
-5. Tocá **Add secret**.
-6. Guardá esa contraseña también en algún lugar seguro (por ejemplo, tus notas). Si se pierde, la próxima versión de la app no se va a poder instalar encima y todos tendrían que desinstalar y volver a instalar.
+2. Tocá **New repository secret** y cargá estos dos (si ya existía `ANDROID_KEYSTORE_PASSWORD`, tocá el lápiz y reemplazá el valor):
+   - `ANDROID_KEYSTORE_BASE64`: el contenido completo del archivo `stwr-release.p12.base64.txt` que te pasó Claude.
+   - `ANDROID_KEYSTORE_PASSWORD`: la contraseña que te pasó Claude en el chat.
+3. Guardá el archivo `.p12` y la contraseña en un lugar seguro **fuera del repo** (gestor de contraseñas o nube privada). Si se pierden, la próxima versión no se podrá instalar encima y todos tendrían que desinstalar y volver a instalar.
 
-Mientras este secreto no esté cargado, GitHub compila el APK igual pero **no lo publica**, para que nadie instale una versión con otra firma.
+Mientras estos secretos no estén cargados, GitHub compila el APK igual pero **no lo publica**, para que nadie instale una versión con otra firma.
+
+### Crear una clave nueva (solo si hace falta rotarla)
+
+```
+keytool -genkeypair -keystore stwr-release.p12 -storetype PKCS12 -alias stwr \
+  -keyalg RSA -keysize 4096 -validity 36500
+base64 -w0 stwr-release.p12 > stwr-release.p12.base64.txt
+```
+
+Usá una contraseña larga y aleatoria (la misma para el almacén y la clave) y cargá los dos secretos como arriba. Cambiar la clave obliga a desinstalar y reinstalar la app en cada celular.
 
 ## 2. Descargar el APK
 

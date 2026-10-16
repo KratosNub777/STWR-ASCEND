@@ -18,12 +18,15 @@ android {
         }
     }
     // Firma fija: siempre la misma clave, así las actualizaciones se instalan encima sin perder datos.
-    // La clave está en stwr-release.p12 (protegida por contraseña); la contraseña vive en un secreto de GitHub.
+    // La clave NO está en el repo: el workflow la decodifica de un secreto de GitHub a stwr-release.p12
+    // junto con la contraseña. Sin los dos, se compila con la firma de prueba y no se publica.
     def keystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    def keystoreFile = file("stwr-release.p12")
+    def hasKeystore = keystorePassword && keystoreFile.exists()
     signingConfigs {
-        if (keystorePassword) {
+        if (hasKeystore) {
             release {
-                storeFile file("stwr-release.p12")
+                storeFile keystoreFile
                 storeType "pkcs12"
                 storePassword keystorePassword
                 keyAlias "stwr"
@@ -33,7 +36,7 @@ android {
     }
     buildTypes {
         release {
-            signingConfig keystorePassword ? signingConfigs.release : signingConfigs.debug
+            signingConfig hasKeystore ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

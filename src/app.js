@@ -935,7 +935,7 @@ const authError = (e) => AUTH_ERRORS[e && e.code] || "No se pudo. Probá de nuev
 // errores de la recuperación: el servidor devuelve un motivo corto, que llega en e.message
 const RESET_ERRORS = {
   "invalid-email": "Ese correo no es válido.",
-  "too-soon": "Ya te mandamos un código hace un momento. Esperá un minuto para pedir otro.",
+  "too-soon": "Ya te mandamos un código hace un momento. Esperá unos minutos para pedir otro.",
   "invalid-code": "El código no es correcto. Revisalo o pedí uno nuevo.",
   "expired-code": "El código venció. Pedí uno nuevo.",
   "weak-password": "La contraseña tiene que tener al menos 6 caracteres.",

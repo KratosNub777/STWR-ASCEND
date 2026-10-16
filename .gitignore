@@ -2,3 +2,10 @@ node_modules/
 dist/
 *.log
 .firebase/
+
+# Claves de firma y secretos: nunca van al repo
+*.p12
+*.jks
+*.keystore
+.dev.vars
+service-account*.json
