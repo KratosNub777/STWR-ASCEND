@@ -179,6 +179,28 @@ La `apiKey` de `src/firebase-config.js` es pública por diseño, pero conviene l
 4. **Alerta de GitHub.** Security → Secret scanning → la alerta de Google API Key → **Close as** → *Used in tests* o *Won't fix* (la clave es pública a propósito y ya está restringida).
 5. **Límite del servidor de recuperación (opcional, recomendado).** En Cloudflare → tu dominio o Workers → Security → WAF → Rate limiting rules: una regla para la ruta del Worker con un máximo de 20 pedidos por minuto por IP. Además, el Worker ya limita por IP (10 pedidos de código y 15 intentos cada 10 minutos) y a 250 correos por día en total.
 
+## 9. App Check: bloquear scripts que usen tu proyecto desde afuera (10 minutos)
+
+La `apiKey` y el resto de `src/firebase-config.js` son públicos a propósito (los necesita cualquiera que abra la web). El problema es que, sin nada más, alguien podría copiarlos y escribir su propio script para leer el ranking miles de veces por segundo, sin pasar por tu web, hasta agotar la cuota gratis de Firestore. **App Check** cierra esa puerta: exige que cada pedido venga de tu web real.
+
+No corta nada mientras no lo actives: primero se agrega "mirando" (modo sin aplicar), y solo vos decidís cuándo pasarlo a aplicar.
+
+1. **Crear la clave de reCAPTCHA.** Consola de Firebase → ⚙ **Configuración del proyecto** → pestaña **App Check** → pestaña **Apps** → tu app web → **Registrar**. Elegí **reCAPTCHA v3** y seguí los pasos (puede pedirte entrar a https://www.google.com/recaptcha/admin para confirmar el dominio `kratosnub777.github.io`). Al terminar te da una clave pública (site key).
+2. **Pegarla en el repo.** Abrí `src/firebase-config.js` y reemplazá `PEGAR_AQUI` de `APPCHECK_SITE_KEY` por esa clave. Subí el cambio a `main`.
+3. **Mirar las métricas unos días.** App Check → pestaña **APIs** → ahí vas a ver pedidos "verificados" (vienen de tu web) y "no verificados" (de otro lado, o de la propia app mientras la métrica se estabiliza). Esperá a que la mayoría de Firestore diga verificado antes del paso 4.
+4. **Aplicar de verdad (opcional, cuando estés seguro).** App Check → pestaña **APIs** → **Cloud Firestore** → **Aplicar**. Desde ese momento, un script externo con la `apiKey` copiada ya no puede leer ni escribir en Firestore sin pasar por tu web. Si algo se rompe, podés volver a "No aplicado" al instante, sin tocar código.
+
+App Check no reemplaza las reglas de `firestore.rules` (que siguen limitando quién escribe qué): es una capa aparte, antes de que el pedido llegue a esas reglas.
+
+## 10. Si te amenazan con tirar el proyecto (DDoS)
+
+Esto no se arregla con código: GitHub, Cloudflare y Google defienden su propia infraestructura, y eso ya te cubre la mayor parte del riesgo real.
+
+- **La web (GitHub Pages)** y **Firestore/Auth (Google)** están detrás de redes que absorben tráfico masivo solas. Lo más que puede pasar es que se agote tu cuota gratis por un rato (el ranking se congela hasta el día siguiente); no se pierden datos ni te cobran, porque el proyecto está en el plan gratis Spark.
+- **El servidor de códigos (Cloudflare Worker)** tiene límites por IP y un tope diario de correos (sección 8). Cloudflare corta solo si se pasa de los 100.000 pedidos diarios del plan gratis, sin costo para vos.
+- Mirá de vez en cuando **Firebase → Uso y facturación** y el panel de Cloudflare, para notar algo raro.
+- Si la amenaza es contra vos como persona (acoso, extorsión), eso es un tema aparte del código: guardá capturas de la conversación y, si se pone serio, es un caso para denunciar en la plataforma donde te están escribiendo, no algo que se resuelva acá.
+
 ## ¿Cómo sé que funcionó?
 
 Abrí la web publicada, escribí tu nombre y volvé a **Firestore Database → Datos**. Tiene que aparecer la colección `players` con un documento a tu nombre.
