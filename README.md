@@ -1,7 +1,7 @@
 # STWR-ASCEND
 
 Pomodoro competitivo para estudiar con amigos: reloj circular, capítulos del 1 al 13, tiempos personalizables
-y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y avisos al subir de puesto.
+y ranking compartido en vivo (Hoy, Esta semana, Este mes y General), con racha de días y avisos al subir de puesto.
 
 ## Estructura
 
@@ -15,7 +15,7 @@ y ranking compartido en vivo (Hoy, Esta semana y General), con racha de días y 
 | `src/profile.js` | Resumen e historial de estudio del perfil. |
 | `src/util.js`, `src/sound.js` | Fechas, almacenamiento del dispositivo, sonido y pantalla encendida. |
 | `firestore.rules` | Reglas de seguridad de la base de datos. |
-| `tests/` | Pruebas de las reglas y de la app con dos usuarios, usando el emulador de Firebase. |
+| `tests/` | Pruebas de las reglas y de la app (dos usuarios, perfil, mes, verificación y borrado de cuenta), usando el emulador de Firebase. |
 | `artifact/index.html` | La versión original que corre dentro de Claude (referencia). |
 | `src/native.js` | Funciones de la app Android: notificaciones y pantalla encendida. |
 | `public/` | Manifiesto de la PWA, service worker e íconos. |

@@ -1,4 +1,4 @@
-# Servidor del código de 6 dígitos para recuperar la contraseña (Cloudflare Workers, plan gratis).
+# Servidor de los códigos de 6 dígitos por correo (recuperar contraseña, verificar el correo y eliminar la cuenta) (Cloudflare Workers, plan gratis).
 # Guía paso a paso: docs/FIREBASE.md, sección 6.
 name = "stwr-reset"
 main = "src/index.js"
@@ -8,6 +8,8 @@ compatibility_date = "2025-01-01"
 # Correo remitente: tiene que ser el que verificaste en Brevo.
 MAIL_FROM = "CAMBIAR@ejemplo.com"
 MAIL_FROM_NAME = "STWR-ASCEND"
+# Clave web de Firebase (la misma de src/firebase-config.js; NO es secreta): sirve para comprobar la sesión de quien pide un código.
+FIREBASE_API_KEY = "AIzaSyDPs9S-MWTp65P9Kv0mPbNpi4sp3nE5IRM"
 
 # Cada correo tiene su propio contador de intentos; así dos pedidos a la vez no se saltean el límite.
 [[durable_objects.bindings]]

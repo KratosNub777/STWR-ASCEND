@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#12111c">
-<meta name="description" content="Pomodoro competitivo para estudiar con amigos: ranking de hoy, de la semana y general.">
+<meta name="description" content="Pomodoro competitivo para estudiar con amigos: ranking de hoy, de la semana, del mes y general.">
 <title>STWR-ASCEND</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png" type="image/png" sizes="192x192">
@@ -179,7 +179,8 @@
       <h2 id="boardTitle">Ranking de la semana</h2>
       <div class="tabs" role="tablist">
         <button role="tab" id="tabDay" aria-selected="false" type="button">Hoy</button>
-        <button role="tab" id="tabWeek" aria-selected="true" type="button">Esta semana</button>
+        <button role="tab" id="tabWeek" aria-selected="true" type="button">Semana</button>
+        <button role="tab" id="tabMonth" aria-selected="false" type="button">Mes</button>
         <button role="tab" id="tabAll" aria-selected="false" type="button">General</button>
       </div>
     </div>
@@ -197,17 +198,33 @@
     </div>
     <div class="champ" id="champ" hidden>
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 16 3 6l5.5 4L12 4l3.5 6L21 6l-2 10H5Zm0 2h14v2H5v-2Z"/></svg>
-      <div><small>Ganó la semana pasada</small><b id="champName"></b></div>
+      <div><small id="champLabel">Ganó la semana pasada</small><b id="champName"></b></div>
     </div>
     <ul class="rules">
       <li><b>Gana</b> quien acumule más minutos de estudio en la semana.</li>
-      <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00. El <b>General</b> suma todo el tiempo estudiado y nunca se reinicia.</li>
+      <li>El ranking semanal <b>se reinicia cada lunes</b> a las 00:00 y el <b>mensual</b> el día 1 de cada mes. El <b>General</b> suma todo el tiempo estudiado y nunca se reinicia.</li>
       <li>Cada 4 sesiones toca un descanso largo. Cada uno elige cuánto duran el estudio y los descansos, o <b>sin descanso</b> para estudiar de corrido. Con <b>Personalizar</b> escribís los minutos que quieras (estudio de 5 a 180, descansos de 0 a 60).</li>
       <li>Elegí el <b>capítulo (1 al 13)</b> y los tiempos antes de iniciar: quedan fijos hasta que termine la sesión.</li>
       <li>La racha cuenta los días seguidos con al menos una sesión completa.</li>
     </ul>
   </section>
 </main>
+
+<div class="gate" id="codeGate" hidden>
+  <form class="gate-card auth-card" id="codeForm" novalidate>
+    <img class="brand-mark" src="./icons/logo-emblema.png" alt="" aria-hidden="true">
+    <h2 id="codeTitle"></h2>
+    <p id="codeText"></p>
+    <div class="field">
+      <label for="codeInput">Código de 6 dígitos</label>
+      <input id="codeInput" name="codeInput" placeholder="6 dígitos" maxlength="6" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" spellcheck="false">
+    </div>
+    <div class="gate-err" id="codeErr" role="alert"></div>
+    <button class="btn btn-primary" type="submit" id="codeSubmit"></button>
+    <button class="link-btn" type="button" id="codeResend">No me llegó: mandar de nuevo</button>
+    <button class="link-btn" type="button" id="codeBack"></button>
+  </form>
+</div>
 
 <dialog class="confirm" id="confirmDlg" aria-labelledby="confirmTitle" aria-describedby="confirmText">
   <form method="dialog" class="confirm-card">
@@ -249,6 +266,9 @@
       <button role="tab" id="pTabHist" aria-selected="false" type="button">Historial</button>
     </div>
     <div class="profile-body" id="profileBody"></div>
+    <div class="profile-danger">
+      <button class="link-btn danger" id="deleteBtn" type="button">Eliminar mi cuenta</button>
+    </div>
   </div>
 </dialog>
 

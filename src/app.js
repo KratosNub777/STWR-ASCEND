@@ -1,8 +1,8 @@
 // STWR-ASCEND: reloj, capítulos, tiempos, ranking y racha.
-import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, clone, escapeHtml, confirmDialog, avatarHtml, resizePhoto } from "./util.js";
+import { $, store, pad, dayKey, addDays, mondayOf, weekKeys, monthKeys, clone, escapeHtml, confirmDialog, avatarHtml, resizePhoto } from "./util.js";
 import { unlockAudio, chime, keepAwake } from "./sound.js";
 import {
-  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine, removeField, accountEmail
+  isConfigured, currentAccount, register, logIn, requestResetCode, confirmReset, logOut, watchPlayers, loadMine, createMine, updateMine, removeField, accountEmail, accountVerified, sendCode, confirmCode
 } from "./data.js";
 import { summaryHtml, historyHtml, timeLabel } from "./profile.js";
 import { isNative, scheduleAlerts, cancelAlerts, SITE_URL } from "./native.js";
@@ -27,7 +27,7 @@ let myId = null;
 let connected = false;     // sesión iniciada en Firebase
 let players = [];          // [{id, name, days}]
 let view = store.get("pomo.view", "week");
-if (!["day", "week", "all"].includes(view)) view = "week";
+if (!["day", "week", "month", "all"].includes(view)) view = "week";
 let prevRanks = null;      // {weekKey, ranks: {id: pos}, mins: {id: min}}
 let pending = store.get("pomo.pending", []); // sesiones aún sin guardar en la base
 
@@ -545,16 +545,18 @@ function renderMe() {
   el.innerHTML = `${FLAME}${n} ${n === 1 ? "día" : "días"}`;
 }
 
+const monthName = (d) => d.toLocaleDateString("es", { month: "long" });
 function renderBoard() {
   renderMe();
   renderProfile();
   const now = new Date();
-  const keys = view === "day" ? [dayKey(now)] : view === "all" ? "all" : weekKeys(mondayOf(now));
+  const keys = view === "day" ? [dayKey(now)] : view === "all" ? "all" : view === "month" ? monthKeys(now.getFullYear(), now.getMonth()) : weekKeys(mondayOf(now));
   const list = rankList(keys);
   $("tabDay").setAttribute("aria-selected", String(view === "day"));
   $("tabWeek").setAttribute("aria-selected", String(view === "week"));
+  $("tabMonth").setAttribute("aria-selected", String(view === "month"));
   $("tabAll").setAttribute("aria-selected", String(view === "all"));
-  $("boardTitle").textContent = { day: "Ranking de hoy", week: "Ranking de la semana", all: "Ranking general" }[view];
+  $("boardTitle").textContent = { day: "Ranking de hoy", week: "Ranking de la semana", month: `Ranking de ${monthName(now)}`, all: "Ranking general" }[view];
   $("thTime").textContent = view === "all" ? "Tiempo" : "Minutos";
 
   const leaderMins = list.length ? list[0].m : 0;
@@ -577,7 +579,7 @@ function renderBoard() {
     const nm = document.createElement("span");
     nm.className = "pname"; nm.textContent = p.name;
     line.append(nm);
-    if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
+    if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", month: "Líder del mes", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
     if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
     if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
     if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
@@ -603,24 +605,32 @@ function renderBoard() {
   $("empty").hidden = anyMinutes;
   $("empty").innerHTML = view === "day"
     ? "<strong>Hoy todavía nadie sumó minutos</strong>Completá una sesión de estudio y quedás arriba de la tabla."
+    : view === "month"
+    ? "<strong>El mes arranca en cero</strong>Cuando alguien complete una sesión de estudio, aparece acá con sus minutos del mes."
     : view === "all"
     ? "<strong>Todavía no hay tiempo acumulado</strong>Acá se suma todo lo que estudió cada uno desde que empezó, sin reinicios."
     : "<strong>La semana arranca en cero</strong>Cuando alguien complete una sesión de estudio, aparece acá con sus minutos y sesiones.";
 
-  // meta: participantes y reinicio del lunes
-  const nextMon = addDays(mondayOf(now), 7);
-  const left = nextMon - now;
+  // meta: participantes y reinicio (el lunes, o el día 1 en el ranking del mes)
+  const nextReset = view === "month" ? new Date(now.getFullYear(), now.getMonth() + 1, 1)
+    : view === "day" ? new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    : addDays(mondayOf(now), 7);
+  const left = nextReset - now;
   const dd = Math.floor(left / 864e5), hh = Math.floor((left % 864e5) / 36e5);
   const people = list.length;
   $("boardMeta").innerHTML = `<span><b>${people}</b> ${people === 1 ? "participante" : "participantes"}</span>`
     + (view === "all" ? "<span>Suma todo lo estudiado, <b>nunca se reinicia</b></span>"
-      : `<span>Reinicio semanal en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
+      : `<span>Reinicio ${{ month: "mensual", day: "diario" }[view] || "semanal"} en <b>${dd > 0 ? dd + " d " : ""}${hh} h</b></span>`);
 
-  // ganador de la semana pasada
-  const lastWeek = rankList(weekKeys(addDays(mondayOf(now), -7)));
-  const champ = lastWeek[0];
+  // ganador de la semana pasada (o del mes pasado, en el ranking del mes)
+  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastPeriod = view === "month"
+    ? rankList(monthKeys(prevMonth.getFullYear(), prevMonth.getMonth()))
+    : rankList(weekKeys(addDays(mondayOf(now), -7)));
+  $("champLabel").textContent = view === "month" ? `Ganó ${monthName(prevMonth)}` : "Ganó la semana pasada";
+  const champ = lastPeriod[0];
   if (champ && champ.m > 0) {
-    const winners = lastWeek.filter((p) => p.m === champ.m).map((p) => p.name).join(" y ");
+    const winners = lastPeriod.filter((p) => p.m === champ.m).map((p) => p.name).join(" y ");
     $("champName").textContent = `${winners} · ${champ.m} min`;
     $("champ").hidden = false;
   } else $("champ").hidden = true;
@@ -757,13 +767,15 @@ function renderProfile() {
   $("pTabHist").setAttribute("aria-selected", String(profileTab === "hist"));
   const posIn = (list) => { const x = list.find((p) => p.id === myId); return x && x.m > 0 ? x.pos : 0; };
   const week = rankList(weekKeys(mondayOf(new Date())));
+  const nowP = new Date();
+  const month = rankList(monthKeys(nowP.getFullYear(), nowP.getMonth()));
   const all = rankList("all");
   const streak = streakOf(days);
   $("profileChips").innerHTML = `<span class="streak${streak ? "" : " off"}">${FLAME}${streak} ${streak === 1 ? "día" : "días"}</span>`
     + `<span class="tag tag-chap">${timeLabel(total.m)} en total</span>`;
   const body = profileTab === "hist"
     ? historyHtml({ days })
-    : summaryHtml({ days, chapters, total, streak, posWeek: posIn(week), posAll: posIn(all), players: all.length });
+    : summaryHtml({ days, chapters, total, streak, posWeek: posIn(week), posMonth: posIn(month), posAll: posIn(all), players: all.length });
   // solo se redibuja si cambió algo, para no perder el scroll cada vez que se refresca el ranking
   if (body !== profileHtml) { profileHtml = body; $("profileBody").innerHTML = body; }
 }
@@ -806,6 +818,7 @@ $("photoRemove").addEventListener("click", () => { writeProfile({ photo: null })
 function setView(v) { view = v; store.set("pomo.view", v); renderBoard(); }
 $("tabDay").addEventListener("click", () => setView("day"));
 $("tabWeek").addEventListener("click", () => setView("week"));
+$("tabMonth").addEventListener("click", () => setView("month"));
 $("tabAll").addEventListener("click", () => setView("all"));
 
 // refresco por cambio de día/semana (solo render)
@@ -836,12 +849,23 @@ async function connect() {
   }
   connecting = false;
   watch();
-  if (account && !account.anonymous) enter(account.uid);
+  if (account && !account.anonymous) enterOrVerify(account.uid, account.verified);
   else {
     // sin cuenta, o con la anónima de antes: hay que registrarse (la anónima se convierte y conserva sus minutos)
     if (account) myId = account.uid;
     if ($("auth").hidden && $("reset").hidden) openAuth("register");
   }
+}
+
+// Cuenta con el correo sin verificar: si todavía no tiene documento en el ranking (cuenta nueva), pide el código.
+// Quien ya jugaba antes de que existiera la verificación entra directo. force = pedir el código siempre.
+async function enterOrVerify(uid, verified, force) {
+  if (!verified) {
+    let mine = null;
+    try { mine = force ? null : await loadMine(); } catch { mine = {}; }   // sin conexión: no se bloquea a nadie
+    if (!mine) { openCode("verify", uid); return; }
+  }
+  enter(uid);
 }
 
 // ya con cuenta: desde acá se guardan sesiones y nombre
@@ -917,6 +941,8 @@ const RESET_ERRORS = {
   "weak-password": "La contraseña tiene que tener al menos 6 caracteres.",
   "mail-failed": "No pudimos mandar el correo. Probá de nuevo en un rato.",
   "update-failed": "No se pudo cambiar la contraseña. Probá de nuevo.",
+  "bad-session": "Tu sesión venció. Cerrá sesión, volvé a entrar y probá de nuevo.",
+  "delete-failed": "No se pudo eliminar la cuenta. Probá de nuevo en un rato.",
   "lookup-failed": "No se pudo. Probá de nuevo en un rato.",
   "not-configured": "Falta conectar el servidor del código (ver docs/FIREBASE.md, sección 6)."
 };
@@ -930,6 +956,11 @@ function openAuth(mode) {
   authMode = mode;
   $("authErr").textContent = "";
   $("authErr").className = "gate-err";
+  if (store.get("pomo.justDeleted", false)) {
+    store.set("pomo.justDeleted", false);
+    $("authErr").className = "gate-err ok";
+    $("authErr").textContent = "Tu cuenta se eliminó. Podés crear una nueva cuando quieras.";
+  }
   $("authName").value = myName;
   $("authPass").value = "";
   $("gate").hidden = true;
@@ -1077,7 +1108,8 @@ $("authForm").addEventListener("submit", async (e) => {
       const uid = await register(email, pass);
       myName = name;
       store.set("pomo.name", name);
-      enter(uid);
+      // cuenta nueva: antes de entrar hay que verificar el correo con un código
+      enterOrVerify(uid, false, true);
     } else {
       const uid = await logIn(email, pass);
       // el nombre y los minutos salen de la cuenta, no de lo que había en este dispositivo
@@ -1085,7 +1117,7 @@ $("authForm").addEventListener("submit", async (e) => {
       store.set("pomo.name", "");
       store.set("pomo.localDays", {});
       store.set("pomo.localChapters", {});
-      enter(uid);
+      enterOrVerify(uid, accountVerified());
     }
   } catch (e2) {
     err.textContent = authError(e2);
@@ -1095,6 +1127,89 @@ $("authForm").addEventListener("submit", async (e) => {
   }
 });
 
+// ---------- Códigos por correo: verificar la cuenta nueva y eliminar la cuenta ----------
+let codeMode = "verify";
+let codeUid = null;
+let codeBusy = false;
+const codeErr = (msg, ok) => { $("codeErr").className = ok ? "gate-err ok" : "gate-err"; $("codeErr").textContent = msg; };
+function renderCode() {
+  const email = accountEmail();
+  const del = codeMode === "delete";
+  $("codeTitle").textContent = del ? "Confirmá que querés eliminar tu cuenta" : "Verificá tu correo";
+  $("codeText").textContent = del
+    ? `Te mandamos un código de 6 dígitos a ${email}. Escribilo para borrar tu cuenta y todos tus minutos para siempre. Mirá también en spam.`
+    : `Te mandamos un código de 6 dígitos a ${email}. Escribilo para terminar de crear tu cuenta. Mirá también en spam.`;
+  $("codeSubmit").textContent = del ? "Eliminar mi cuenta para siempre" : "Verificar";
+  $("codeSubmit").className = del ? "btn btn-danger" : "btn btn-primary";
+  $("codeBack").textContent = del ? "Cancelar, me quedo" : "Usar otro correo (cerrar sesión)";
+}
+async function requestCode(quiet) {
+  try {
+    const res = await sendCode(codeMode);
+    if (res && res.verified && codeMode === "verify") { finishVerify(); return; }
+    codeErr(quiet ? "" : "Listo, te mandamos un código nuevo.", true);
+  } catch (e) { codeErr(resetError(e)); }
+}
+function openCode(mode, uid) {
+  codeMode = mode;
+  codeUid = uid || codeUid;
+  codeErr("");
+  $("auth").hidden = true; $("gate").hidden = true; $("reset").hidden = true;
+  $("codeInput").value = "";
+  $("codeGate").hidden = false;
+  renderCode();
+  setTimeout(() => { try { $("codeInput").focus(); } catch {} }, 50);
+  requestCode(true);
+}
+function finishVerify() {
+  $("codeGate").hidden = true;
+  enter(codeUid);
+}
+$("codeResend").addEventListener("click", () => requestCode(false));
+$("codeBack").addEventListener("click", async () => {
+  if (codeMode === "delete") { $("codeGate").hidden = true; return; }
+  try { await logOut(); } catch {}
+  ["pomo.name", "pomo.pending", "pomo.localDays", "pomo.localChapters"].forEach((k) => store.set(k, k === "pomo.name" ? "" : k === "pomo.pending" ? [] : {}));
+  location.reload();
+});
+$("codeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (codeBusy) return;
+  const code = $("codeInput").value.replace(/\s+/g, "");
+  if (!/^\d{6}$/.test(code)) { codeErr(RESET_ERRORS["invalid-code"]); return; }
+  codeBusy = true;
+  $("codeSubmit").disabled = true;
+  codeErr("");
+  try {
+    await confirmCode(codeMode, code);
+    if (codeMode === "verify") finishVerify();
+    else {
+      // la cuenta ya no existe: se borra lo guardado en el dispositivo y se vuelve al registro
+      ["pomo.name", "pomo.pending", "pomo.localDays", "pomo.localChapters", "pomo.timer"].forEach((k) => store.set(k, k === "pomo.name" ? "" : k === "pomo.pending" ? [] : {}));
+      store.set("pomo.justDeleted", true);
+      location.reload();
+    }
+  } catch (e2) { codeErr(resetError(e2)); }
+  finally { codeBusy = false; $("codeSubmit").disabled = false; }
+});
+
+$("deleteBtn").addEventListener("click", async () => {
+  if (!ready() || !accountEmail()) { profileMsg("Para eliminar tu cuenta tenés que haber iniciado sesión y tener internet."); return; }
+  const first = await confirmDialog({
+    tone: "warn", title: "¿Eliminar tu cuenta?",
+    text: "Se borran tu perfil, tu foto y todos tus minutos del ranking. No se puede deshacer.",
+    okLabel: "Sí, eliminarla"
+  });
+  if (!first) return;
+  const second = await confirmDialog({
+    tone: "warn", title: "¿Seguro de verdad?",
+    text: "Es la última pregunta. Te mandamos un código a tu correo para confirmar que sos vos.",
+    okLabel: "Mandar el código"
+  });
+  if (!second) return;
+  profileDlg.close();
+  openCode("delete");
+});
 $("logoutBtn").addEventListener("click", async () => {
   const unsaved = pending.length > 0;
   const ok = await confirmDialog(unsaved

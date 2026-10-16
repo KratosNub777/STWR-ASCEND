@@ -1,6 +1,7 @@
 // Perfil e historial: una cuenta con días de estudio ve su resumen y su historial, pone una foto
 // (se guarda en la base y aparece en el ranking) y la quita.
 import { chromium } from "playwright";
+import { captureCodes, registerAndVerify } from "./helpers.mjs";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { readFileSync, writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -23,15 +24,12 @@ const browser = await chromium.launch(process.env.CHROME ? { executablePath: pro
 const errors = [];
 const page = await (await browser.newContext()).newPage();
 page.on("pageerror", (e) => errors.push(e.message));
+captureCodes(page);
 await page.goto(URL);
 await sleep(2500);
 
 // cuenta nueva
-await page.fill("#authName", "Sofi");
-await page.fill("#authEmail", "sofi@prueba.com");
-await page.fill("#authPass", "secreta123");
-await page.click("#authBtn");
-await sleep(3000);
+await registerAndVerify(page, "Sofi", "sofi@prueba.com", "secreta123");
 const uid = await page.evaluate(() => new Promise((res) => {
   const req = indexedDB.open("firebaseLocalStorageDb");
   req.onsuccess = () => {

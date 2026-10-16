@@ -1,5 +1,5 @@
 // Perfil e historial de estudio: solo dibuja a partir de los datos que le pasa app.js.
-import { dayKey, addDays, mondayOf, escapeHtml } from "./util.js";
+import { dayKey, addDays, mondayOf, monthKeys, escapeHtml } from "./util.js";
 
 const FLAME = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2s5 4.6 5 10a5 5 0 0 1-10 0c0-2 1-3.6 2-4.6 0 1.6.8 2.8 2 3.1C10.6 7.6 12 2 12 2Z"/></svg>';
 
@@ -34,11 +34,13 @@ const stat = (label, value, sub = "") =>
   `<div class="stat"><small>${label}</small><b>${value}</b>${sub ? `<span>${sub}</span>` : ""}</div>`;
 
 /** Pestaña "Resumen": números clave y tiempo por capítulo. */
-export function summaryHtml({ days, chapters, total, streak, posWeek, posAll, players }) {
+export function summaryHtml({ days, chapters, total, streak, posWeek, posMonth, posAll, players }) {
   const list = activeDays(days);
   const best = list.reduce((b, x) => (x[1].m > (b ? b[1].m : 0) ? x : b), null);
   const weekKeys = Array.from({ length: 7 }, (_, i) => dayKey(addDays(mondayOf(new Date()), i)));
   const week = weekKeys.reduce((a, k) => { const d = days[k]; return d ? { m: a.m + num(d.m), s: a.s + num(d.s) } : a; }, { m: 0, s: 0 });
+  const now = new Date();
+  const month = monthKeys(now.getFullYear(), now.getMonth()).reduce((a, k) => { const d = days[k]; return d ? { m: a.m + num(d.m), s: a.s + num(d.s) } : a; }, { m: 0, s: 0 });
   const today = days[dayKey(new Date())] || { m: 0, s: 0 };
   const avg = list.length ? Math.round(list.reduce((a, x) => a + x[1].m, 0) / list.length) : 0;
   const pos = (p) => (p ? `Puesto ${p} de ${players}` : "Sin puesto todavía");
@@ -47,6 +49,7 @@ export function summaryHtml({ days, chapters, total, streak, posWeek, posAll, pl
     + stat("Estudiado en total", timeLabel(total.m), `${total.s} ${total.s === 1 ? "sesión" : "sesiones"}`)
     + stat("Hoy", timeLabel(today.m), `${num(today.s)} ${num(today.s) === 1 ? "sesión" : "sesiones"}`)
     + stat("Esta semana", timeLabel(week.m), pos(posWeek))
+    + stat(`Este mes (${now.toLocaleDateString("es", { month: "long" })})`, timeLabel(month.m), pos(posMonth))
     + stat("Ranking general", posAll ? `#${posAll}` : "—", pos(posAll))
     + stat("Racha actual", `${FLAME}${streak} ${streak === 1 ? "día" : "días"}`, `Máxima: ${longestStreak(list.map((x) => x[0]))} (últimos 70 días)`)
     + stat("Promedio por día activo", list.length ? timeLabel(avg) : "—", `${list.length} ${list.length === 1 ? "día" : "días"} con estudio`)
