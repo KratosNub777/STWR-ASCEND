@@ -5,11 +5,13 @@ import { defineConfig } from "vite";
 // (en desarrollo Vite inyecta scripts propios para recargar).
 const CSP = [
   "default-src 'self'",
-  "script-src 'self'",
+  // reCAPTCHA v3 (App Check), invisible: carga su propio script
+  "script-src 'self' https://www.google.com https://www.gstatic.com",
   "style-src 'self' 'unsafe-inline'",          // los avatares usan style="" con el color
   "img-src 'self' data: blob:",                // fotos de perfil (data:) y selector de foto (blob:)
   "font-src 'self' data:",
-  "connect-src 'self' https://*.googleapis.com https://stwr-reset.pomodorinho.workers.dev https://kratosnub777.github.io",
+  "connect-src 'self' https://*.googleapis.com https://stwr-reset.pomodorinho.workers.dev https://kratosnub777.github.io https://www.google.com https://www.gstatic.com",
+  "frame-src https://www.google.com",          // iframe interno de reCAPTCHA v3
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'"
