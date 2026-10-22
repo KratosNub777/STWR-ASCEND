@@ -560,12 +560,14 @@ function renderBoard() {
   $("thTime").textContent = view === "all" ? "Tiempo" : "Minutos";
 
   const leaderMins = list.length ? list[0].m : 0;
+  // si dos o más comparten el primer puesto, nadie es líder: el puesto queda en disputa
+  const tiedTop = leaderMins > 0 && list.filter((p) => p.m === leaderMins).length > 1;
   const tbody = $("rows");
   tbody.textContent = "";
   list.forEach((p) => {
     const tr = document.createElement("tr");
     const isLead = p.m > 0 && p.m === leaderMins;
-    if (isLead) tr.classList.add("lead");
+    if (isLead) tr.classList.add(tiedTop ? "tie" : "lead");
     if (p.id === myId) tr.classList.add("me");
     if (p.m === 0) tr.classList.add("zero");
 
@@ -579,7 +581,8 @@ function renderBoard() {
     const nm = document.createElement("span");
     nm.className = "pname"; nm.textContent = p.name;
     line.append(nm);
-    if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", month: "Líder del mes", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
+    if (isLead && tiedTop) line.insertAdjacentHTML("beforeend", '<span class="tag tag-tie" title="Empatados en el primer puesto">En disputa</span>');
+    else if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", month: "Líder del mes", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
     if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
     if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
     if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
