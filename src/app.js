@@ -560,12 +560,14 @@ function renderBoard() {
   $("thTime").textContent = view === "all" ? "Tiempo" : "Minutos";
 
   const leaderMins = list.length ? list[0].m : 0;
+  // si dos o más comparten el primer puesto, nadie es líder: el puesto queda en disputa
+  const tiedTop = leaderMins > 0 && list.filter((p) => p.m === leaderMins).length > 1;
   const tbody = $("rows");
   tbody.textContent = "";
   list.forEach((p) => {
     const tr = document.createElement("tr");
     const isLead = p.m > 0 && p.m === leaderMins;
-    if (isLead) tr.classList.add("lead");
+    if (isLead) tr.classList.add(tiedTop ? "tie" : "lead");
     if (p.id === myId) tr.classList.add("me");
     if (p.m === 0) tr.classList.add("zero");
 
@@ -579,7 +581,8 @@ function renderBoard() {
     const nm = document.createElement("span");
     nm.className = "pname"; nm.textContent = p.name;
     line.append(nm);
-    if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", month: "Líder del mes", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
+    if (isLead && tiedTop) line.insertAdjacentHTML("beforeend", '<span class="tag tag-tie" title="Empatados en el primer puesto">En disputa</span>');
+    else if (isLead) line.insertAdjacentHTML("beforeend", `<span class="tag tag-lead">${{ week: "Líder", month: "Líder del mes", day: "Líder de hoy", all: "Récord" }[view]}</span>`);
     if (p.id === myId) line.insertAdjacentHTML("beforeend", '<span class="tag tag-me">Vos</span>');
     if (p.current) line.insertAdjacentHTML("beforeend", `<span class="tag tag-chap" title="Capítulo que está estudiando">Cap. ${p.current}</span>`);
     if (p.streak > 0) line.insertAdjacentHTML("beforeend", `<span class="mini-streak" title="Racha">${FLAME}${p.streak}</span>`);
@@ -656,15 +659,18 @@ function checkClimbs() {
   const list = rankList(weekKeys(mondayOf(now)));
   const ranks = {}, mins = {};
   list.forEach((p) => { ranks[p.id] = p.pos; mins[p.id] = p.m; });
+  const tiedTop = list.filter((p) => p.pos === 1 && p.m > 0).length > 1;
   if (prevRanks && prevRanks.weekKey === wk) {
     list.forEach((p) => {
       const before = prevRanks.ranks[p.id];
       if (before && p.pos < before && p.m > (prevRanks.mins[p.id] || 0)) {
         if (p.id === myId) {
-          toast(`<b>¡Subiste al puesto ${p.pos}!</b> ${p.pos === 1 ? "Ahora sos líder de la semana. Defendé la corona." : pick(CHEERS_ME)}`, true);
+          if (p.pos === 1 && tiedTop) toast("<b>¡Empataste el primer puesto!</b> La corona está en disputa. Un pomodoro más y es tuya.", true);
+          else toast(`<b>¡Subiste al puesto ${p.pos}!</b> ${p.pos === 1 ? "Ahora sos líder de la semana. Defendé la corona." : pick(CHEERS_ME)}`, true);
         } else {
           const safe = escapeHtml(p.name);
-          toast(`<b>${safe} subió al puesto ${p.pos}.</b> ${pick(CHEERS_OTHER)}`);
+          if (p.pos === 1 && tiedTop) toast(`<b>${safe} empató el primer puesto.</b> La corona está en disputa.`);
+          else toast(`<b>${safe} subió al puesto ${p.pos}.</b> ${pick(CHEERS_OTHER)}`);
         }
       }
     });
