@@ -249,6 +249,7 @@ td:last-child { border-radius: 0 12px 12px 0; }
 .tag { font-size: .7rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; letter-spacing: .03em; text-transform: uppercase; }
 .tag-me { background: var(--me-soft); color: var(--me); }
 .tag-lead { background: var(--gold-soft); color: var(--gold); }
+.tag-tie { background: var(--tomato-soft); color: var(--tomato); }
 .mini-streak { color: var(--muted); font-size: .78rem; display: inline-flex; gap: 3px; align-items: center; }
 .mini-streak svg { width: 11px; height: 11px; color: var(--tomato); }
 .mins { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; white-space: nowrap; }
@@ -256,6 +257,8 @@ td:last-child { border-radius: 0 12px 12px 0; }
 .sess { color: var(--muted); }
 tr.lead td { background: linear-gradient(var(--gold-soft), var(--gold-soft)), var(--surface-2); }
 tr.lead .pos { color: var(--gold); }
+tr.tie td { background: linear-gradient(var(--tomato-soft), var(--tomato-soft)), var(--surface-2); }
+tr.tie .pos { color: var(--tomato); }
 tr.me td { box-shadow: inset 0 1px 0 var(--me), inset 0 -1px 0 var(--me); }
 tr.me td:first-child { box-shadow: inset 1px 1px 0 var(--me), inset 0 -1px 0 var(--me); }
 tr.me td:last-child { box-shadow: inset -1px 1px 0 var(--me), inset 0 -1px 0 var(--me); }
@@ -396,6 +399,7 @@ tr.zero .mins, tr.zero .pname { color: var(--muted); }
 .name-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .name-row .name-line { min-width: 0; }
 tr.lead .avatar { box-shadow: 0 0 0 2px var(--gold); }
+tr.tie .avatar { box-shadow: 0 0 0 2px var(--tomato); }
 
 /* Perfil e historial */
 .profile {
