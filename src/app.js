@@ -659,15 +659,18 @@ function checkClimbs() {
   const list = rankList(weekKeys(mondayOf(now)));
   const ranks = {}, mins = {};
   list.forEach((p) => { ranks[p.id] = p.pos; mins[p.id] = p.m; });
+  const tiedTop = list.filter((p) => p.pos === 1 && p.m > 0).length > 1;
   if (prevRanks && prevRanks.weekKey === wk) {
     list.forEach((p) => {
       const before = prevRanks.ranks[p.id];
       if (before && p.pos < before && p.m > (prevRanks.mins[p.id] || 0)) {
         if (p.id === myId) {
-          toast(`<b>¡Subiste al puesto ${p.pos}!</b> ${p.pos === 1 ? "Ahora sos líder de la semana. Defendé la corona." : pick(CHEERS_ME)}`, true);
+          if (p.pos === 1 && tiedTop) toast("<b>¡Empataste el primer puesto!</b> La corona está en disputa. Un pomodoro más y es tuya.", true);
+          else toast(`<b>¡Subiste al puesto ${p.pos}!</b> ${p.pos === 1 ? "Ahora sos líder de la semana. Defendé la corona." : pick(CHEERS_ME)}`, true);
         } else {
           const safe = escapeHtml(p.name);
-          toast(`<b>${safe} subió al puesto ${p.pos}.</b> ${pick(CHEERS_OTHER)}`);
+          if (p.pos === 1 && tiedTop) toast(`<b>${safe} empató el primer puesto.</b> La corona está en disputa.`);
+          else toast(`<b>${safe} subió al puesto ${p.pos}.</b> ${pick(CHEERS_OTHER)}`);
         }
       }
     });
